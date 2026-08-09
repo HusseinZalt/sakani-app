@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سكني - تعديل البيانات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-50:#F0F9FF; --blue-500:#0EA5E9; --blue-600:#0284C7;
+    --gray-0:#FFFFFF; --gray-50:#F8FAFC; --gray-100:#F1F5F9; --gray-200:#E2E8F0;
+    --gray-300:#CBD5E1; --gray-400:#94A3B8; --gray-500:#64748B; --gray-900:#0F172A;
+    --bg-canvas:var(--gray-50); --bg-surface:var(--gray-0); --bg-primary:var(--blue-500);
+    --bg-primary-subtle:var(--blue-50);
+    --text-primary:var(--gray-900); --text-secondary:var(--gray-500); --text-tertiary:var(--gray-400);
+    --border-default:var(--gray-200); --border-subtle:var(--gray-100);
+    --radius-lg:16px; --radius-xl:20px;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+    --shadow-lg:0 10px 24px -4px rgba(15,23,42,.10);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ font-family:'Cairo',sans-serif; background:var(--gray-100); color:var(--text-primary); padding:40px; display:flex; justify-content:center; }
+  .stage-label{ font-size:13px; font-weight:700; color:var(--text-secondary); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .stage-label .dot{width:8px; height:8px; border-radius:50%; background:var(--bg-primary);}
+  .icon{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; display:block;}
+  .icon-sm{width:16px; height:16px;}
+  .phone{ width:390px; height:820px; background:var(--bg-canvas); border-radius:44px; box-shadow:0 24px 60px -16px rgba(15,23,42,.35), 0 0 0 10px var(--gray-900); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:28px; background:var(--gray-900); border-radius:0 0 18px 18px; z-index:20; }
+  .m-header{ background:linear-gradient(135deg,var(--blue-500),var(--blue-600)); padding:56px 20px 20px; color:#fff; display:flex; align-items:center; gap:12px; }
+  .back-btn{width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .m-header .m-title{font-size:17px; font-weight:800;}
+  .m-body{flex:1; overflow-y:auto; padding:22px 20px 40px;}
+  .avatar-edit{width:84px; height:84px; border-radius:50%; background:linear-gradient(135deg,#38BDF8,var(--blue-600)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; margin:0 auto 8px; position:relative; box-shadow:var(--shadow-lg); border:4px solid var(--bg-surface);}
+  .cam-badge{position:absolute; bottom:0; left:0; width:28px; height:28px; border-radius:50%; background:var(--bg-primary); color:#fff; display:flex; align-items:center; justify-content:center; border:3px solid var(--bg-surface);}
+  .field{margin-bottom:14px;}
+  .field label{font-size:12.5px; font-weight:700; color:var(--text-secondary); margin-bottom:7px; display:block;}
+  .input-wrap{display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1.5px solid var(--border-default); border-radius:var(--radius-lg); padding:12px 14px;}
+  .input-wrap.locked{background:var(--gray-100); border-color:var(--gray-100);}
+  .input-wrap input{border:none; outline:none; background:transparent; font-family:'Cairo',sans-serif; font-size:13.5px; flex:1; color:var(--text-primary);}
+  .input-wrap.locked input{color:var(--text-tertiary);}
+  .input-wrap svg{color:var(--text-tertiary); flex-shrink:0;}
+  .lock-note{font-size:10.5px; color:var(--text-tertiary); margin-top:5px; display:flex; align-items:center; gap:4px;}
+  .btn-primary{ background:var(--bg-primary); color:#fff; border:none; border-radius:var(--radius-lg); padding:14px; font-family:'Cairo',sans-serif; font-weight:700; font-size:14.5px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 20px -6px rgba(14,165,233,.5); margin-top:6px; }
+  .section-title{font-size:13px; font-weight:800; color:var(--text-tertiary); margin:20px 0 12px;}
+</style>
+</head>
+<body>
+
+<div>
+  <div class="stage-label"><span class="dot"></span>17 — تعديل البيانات الشخصية</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header">
+      <div class="back-btn"><svg class="icon-sm" style="stroke:#fff; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>
+      <div class="m-title">تعديل البيانات</div>
+    </div>
+    <div class="m-body">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div class="avatar-edit">أم<div class="cam-badge"><svg class="icon-sm" style="stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div></div>
+        <div style="font-size:11.5px; color:var(--blue-600); font-weight:700;">تغيير الصورة الشخصية</div>
+      </div>
+
+      <div class="section-title">البيانات القابلة للتعديل</div>
+      <div class="field"><label>الاسم الأول</label><div class="input-wrap"><input value="أحمد"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></div></div>
+      <div class="field"><label>الاسم الأخير</label><div class="input-wrap"><input value="محمد"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></div></div>
+      <div class="field"><label>رقم الجوال</label><div class="input-wrap"><input value="05xxxxxxxx" dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg></div></div>
+      <div class="field"><label>البريد الإلكتروني</label><div class="input-wrap"><input value="ahmed@university.edu" dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div></div>
+      <div class="field"><label>مكان الإقامة</label><div class="input-wrap"><input value="الرياض"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div></div>
+
+      <div class="section-title">بيانات ثابتة (غير قابلة للتعديل)</div>
+      <div class="field">
+        <label>الرقم الجامعي</label>
+        <div class="input-wrap locked"><input value="442100215" disabled><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="lock-note"><svg class="icon-sm" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> للتعديل تواصل مع إدارة السكن</div>
+      </div>
+      <div class="field">
+        <label>الرقم الوطني / الإقامة</label>
+        <div class="input-wrap locked"><input value="1xxxxxxxxx" disabled dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      </div>
+
+      <button class="btn-primary"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> حفظ التغييرات</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

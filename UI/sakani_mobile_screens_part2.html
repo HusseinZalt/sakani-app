@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سكني - شاشات إضافية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-50:#F0F9FF; --blue-100:#E0F2FE; --blue-400:#38BDF8; --blue-500:#0EA5E9; --blue-600:#0284C7; --blue-700:#0369A1;
+    --green-50:#F0FDF4; --green-600:#16A34A; --green-700:#15803D;
+    --amber-50:#FFFBEB; --amber-500:#F59E0B; --amber-600:#D97706; --amber-700:#B45309;
+    --red-50:#FEF2F2; --red-600:#DC2626; --red-700:#B91C1C;
+    --violet-50:#F5F3FF; --violet-500:#8B5CF6; --violet-600:#7C3AED;
+    --gray-0:#FFFFFF; --gray-50:#F8FAFC; --gray-100:#F1F5F9; --gray-200:#E2E8F0;
+    --gray-300:#CBD5E1; --gray-400:#94A3B8; --gray-500:#64748B; --gray-600:#475569;
+    --gray-700:#334155; --gray-800:#1E293B; --gray-900:#0F172A;
+    --bg-canvas:var(--gray-50); --bg-surface:var(--gray-0); --bg-primary:var(--blue-500);
+    --bg-primary-subtle:var(--blue-50); --bg-success-subtle:var(--green-50);
+    --bg-warning-subtle:var(--amber-50); --bg-danger-subtle:var(--red-50); --bg-accent-subtle:var(--violet-50);
+    --text-primary:var(--gray-900); --text-secondary:var(--gray-500); --text-tertiary:var(--gray-400);
+    --text-on-primary:#fff; --text-success:var(--green-700); --text-warning:var(--amber-700);
+    --border-default:var(--gray-200); --border-subtle:var(--gray-100);
+    --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px; --radius-2xl:28px; --radius-full:999px;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+    --shadow-md:0 4px 12px -2px rgba(15,23,42,.08);
+    --shadow-lg:0 10px 24px -4px rgba(15,23,42,.10);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ font-family:'Cairo',sans-serif; background:var(--gray-100); color:var(--text-primary); padding:40px; }
+  .stage{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; justify-content:center; }
+  .phone-wrap{display:flex; flex-direction:column; align-items:center;}
+  .stage-label{ font-size:13px; font-weight:700; color:var(--text-secondary); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .stage-label .dot{width:8px; height:8px; border-radius:50%; background:var(--bg-primary);}
+  .icon{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; display:block;}
+  .icon-sm{width:16px; height:16px;} .icon-lg{width:22px; height:22px;} .icon-xl{width:28px; height:28px;}
+
+  .phone{ width:390px; height:820px; background:var(--bg-canvas); border-radius:44px; box-shadow:0 24px 60px -16px rgba(15,23,42,.35), 0 0 0 10px var(--gray-900); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:28px; background:var(--gray-900); border-radius:0 0 18px 18px; z-index:20; }
+  .m-header{ background:linear-gradient(135deg,var(--blue-500),var(--blue-600)); padding:56px 24px 26px; color:#fff; position:relative; }
+  .m-header .m-title{font-size:19px; font-weight:800;}
+  .m-header .m-sub{font-size:12px; opacity:.85; margin-top:4px; font-weight:500;}
+  .m-body{flex:1; overflow-y:auto; padding:22px 20px 40px;}
+
+  .field{margin-bottom:14px;}
+  .field label{font-size:12.5px; font-weight:700; color:var(--text-secondary); margin-bottom:7px; display:block;}
+  .input-wrap{display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1.5px solid var(--border-default); border-radius:var(--radius-lg); padding:12px 14px;}
+  .input-wrap input, .input-wrap textarea{border:none; outline:none; background:transparent; font-family:'Cairo',sans-serif; font-size:13.5px; flex:1; color:var(--text-primary); resize:none;}
+  .input-wrap svg{color:var(--text-tertiary); flex-shrink:0;}
+  .btn-primary{ background:var(--bg-primary); color:#fff; border:none; border-radius:var(--radius-lg); padding:14px; font-family:'Cairo',sans-serif; font-weight:700; font-size:14.5px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 20px -6px rgba(14,165,233,.5); cursor:pointer; }
+  .btn-primary.disabled{background:var(--gray-300); box-shadow:none; color:var(--gray-500);}
+  .btn-secondary{ background:var(--bg-primary-subtle); color:var(--blue-600); border:none; border-radius:var(--radius-lg); padding:12px; font-family:'Cairo',sans-serif; font-weight:700; font-size:13.5px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+  .link{color:var(--blue-600); font-weight:700; font-size:12.5px; text-decoration:none;}
+  .card{background:var(--bg-surface); border-radius:var(--radius-xl); border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); padding:18px;}
+  .section-title{font-size:14px; font-weight:800; margin:18px 0 12px;}
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{padding:9px 16px; border-radius:var(--radius-full); font-size:12.5px; font-weight:700; border:1.5px solid var(--border-default); color:var(--text-secondary); background:var(--bg-surface);}
+  .chip.selected{background:var(--bg-primary); color:#fff; border-color:var(--bg-primary);}
+  .stepper-line{display:flex; align-items:center; gap:6px; margin-bottom:18px;}
+  .stepper-line .seg{flex:1; height:4px; border-radius:2px; background:var(--gray-200);}
+  .stepper-line .seg.done{background:var(--bg-primary);}
+  .upload-box{border:1.5px dashed var(--border-default); border-radius:var(--radius-lg); padding:18px; display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-tertiary); background:var(--bg-canvas);}
+  .upload-box .lbl{font-size:11.5px; font-weight:700;}
+  .avatar-upload{width:76px; height:76px; border-radius:50%; border:1.5px dashed var(--border-default); display:flex; align-items:center; justify-content:center; color:var(--text-tertiary); margin:0 auto; position:relative; background:var(--bg-canvas);}
+  .avatar-upload .badge-cam{position:absolute; bottom:0; left:0; width:26px; height:26px; border-radius:50%; background:var(--bg-primary); color:#fff; display:flex; align-items:center; justify-content:center; border:3px solid var(--bg-surface);}
+  .otp-row{display:flex; gap:10px; justify-content:center; margin:24px 0;}
+  .otp-box{width:52px; height:60px; border:1.5px solid var(--border-default); border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; background:var(--bg-surface);}
+  .otp-box.filled{border-color:var(--bg-primary); color:var(--blue-600);}
+  .toggle{width:44px; height:26px; border-radius:99px; background:var(--gray-200); position:relative; flex-shrink:0;}
+  .toggle.on{background:var(--bg-primary);}
+  .toggle .knob{width:20px; height:20px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .toggle.on .knob{left:auto; right:3px;}
+  .setting-row{display:flex; align-items:center; justify-content:space-between; padding:13px 2px; border-bottom:1px solid var(--border-subtle);}
+  .setting-row:last-child{border-bottom:none;}
+  .setting-label{font-size:13px; font-weight:700;}
+  .setting-sub{font-size:10.5px; color:var(--text-tertiary); margin-top:2px;}
+  .menu-row{display:flex; align-items:center; gap:12px; padding:14px 2px; border-bottom:1px solid var(--border-subtle);}
+  .menu-row:last-child{border-bottom:none;}
+  .menu-ic{width:34px; height:34px; border-radius:var(--radius-md); background:var(--bg-canvas); display:flex; align-items:center; justify-content:center; color:var(--text-secondary);}
+  .menu-label{font-size:13px; font-weight:700; flex:1;}
+  .cat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .cat-item{background:var(--bg-surface); border:1.5px solid var(--border-subtle); border-radius:var(--radius-lg); padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:var(--shadow-sm);}
+  .cat-item.selected{border-color:var(--bg-primary); background:var(--bg-primary-subtle);}
+  .cat-ic{width:36px; height:36px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center;}
+  .cat-label{font-size:11px; font-weight:700; text-align:center;}
+  .list-card{background:var(--bg-surface); border-radius:var(--radius-xl); border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); padding:16px; margin-bottom:12px;}
+  .pill{font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:var(--radius-full); display:inline-block;}
+  .member-row{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border-subtle);}
+  .member-row:last-child{border-bottom:none;}
+  .avatar-sm{width:38px; height:38px; border-radius:50%; background:var(--bg-primary-subtle); color:var(--blue-600); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800; flex-shrink:0;}
+  .m-name-row{font-size:13px; font-weight:700;}
+  .m-role{font-size:10.5px; color:var(--amber-600); font-weight:700; display:flex; align-items:center; gap:3px; margin-top:2px;}
+  .code-row{display:flex; align-items:center; justify-content:space-between; background:var(--bg-canvas); border-radius:var(--radius-lg); padding:12px 14px;}
+  .code-row .code-txt{font-weight:800; font-size:13.5px;}
+  .copy-btn{display:flex; align-items:center; gap:5px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-md); padding:6px 10px; font-size:11.5px; font-weight:700; color:var(--text-secondary);}
+
+  /* dialog overlay */
+  .overlay{position:absolute; inset:0; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
+  .dialog{background:var(--bg-surface); border-radius:var(--radius-2xl); padding:24px 20px; width:100%; box-shadow:var(--shadow-lg); text-align:center;}
+  .dialog-ic{width:52px; height:52px; border-radius:50%; background:var(--bg-primary-subtle); color:var(--blue-600); display:flex; align-items:center; justify-content:center; margin:0 auto 14px;}
+  .dialog-title{font-size:15.5px; font-weight:800; margin-bottom:8px;}
+  .dialog-sub{font-size:12.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;}
+  .dialog-actions{display:flex; gap:10px;}
+  .btn-outline{flex:1; background:var(--bg-surface); border:1.5px solid var(--border-default); border-radius:var(--radius-lg); padding:12px; font-family:'Cairo',sans-serif; font-weight:700; font-size:13px; color:var(--text-secondary);}
+
+  /* swiper */
+  .swiper{display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; margin-bottom:6px;}
+  .swiper-slide{min-width:270px; height:110px; border-radius:var(--radius-xl); background:linear-gradient(135deg,var(--violet-500),var(--blue-600)); flex-shrink:0; padding:16px; color:#fff; display:flex; flex-direction:column; justify-content:flex-end; box-shadow:var(--shadow-md); position:relative; overflow:hidden;}
+  .swiper-slide.alt{background:linear-gradient(135deg,var(--amber-500),var(--red-600));}
+  .swiper-slide .s-title{font-size:14px; font-weight:800;}
+  .swiper-slide .s-sub{font-size:10.5px; opacity:.9; margin-top:2px;}
+  .swiper-dots{display:flex; justify-content:center; gap:5px; margin-bottom:18px;}
+  .swiper-dots span{width:6px; height:6px; border-radius:50%; background:var(--gray-300);}
+  .swiper-dots span.active{background:var(--bg-primary); width:16px; border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+<!-- 9. SIGNUP STEP 1 -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>9 — إنشاء حساب (١/٢) البيانات الأساسية</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header"><div class="m-title">إنشاء حساب جديد</div><div class="m-sub">أدخل بياناتك الأساسية للبدء</div></div>
+    <div class="m-body">
+      <div class="stepper-line"><div class="seg done"></div><div class="seg"></div></div>
+      <div class="field"><label>الاسم الأول</label><div class="input-wrap"><input placeholder="أحمد"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></div>
+      <div class="field"><label>الاسم الأخير</label><div class="input-wrap"><input placeholder="محمد"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></div>
+      <div class="field"><label>البريد الإلكتروني</label><div class="input-wrap"><input placeholder="example@university.edu" dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div></div>
+      <div class="field"><label>رقم الجوال</label><div class="input-wrap"><input placeholder="05xxxxxxxx" dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg></div></div>
+      <div class="field"><label>كلمة المرور</label><div class="input-wrap"><input type="password" value="••••••••" dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></div></div>
+      <div class="field"><label>تأكيد كلمة المرور</label><div class="input-wrap"><input type="password" value="••••••••" dir="ltr" style="text-align:right;"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <button class="btn-primary" style="margin-top:8px;">التالي <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+      <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-secondary);">لديك حساب؟ <a class="link">تسجيل الدخول</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- 10. SIGNUP STEP 2 -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>10 — إكمال المعلومات (٢/٢)</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header"><div class="m-title">إكمال المعلومات</div><div class="m-sub">معلومات جامعتك وهويتك</div></div>
+    <div class="m-body">
+      <div class="stepper-line"><div class="seg done"></div><div class="seg done"></div></div>
+      <div class="avatar-upload" style="margin-bottom:20px;">
+        <svg class="icon-lg" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div class="badge-cam"><svg class="icon-sm" style="stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
+      </div>
+      <div class="field"><label>الرقم الجامعي</label><div class="input-wrap"><input placeholder="442100215"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/></svg></div></div>
+      <div class="field"><label>الجامعة</label><div class="input-wrap"><input placeholder="اختر الجامعة"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div></div>
+      <div class="field"><label>رقم الهوية الوطنية / الإقامة</label><div class="input-wrap"><input placeholder="1xxxxxxxxx"></div></div>
+      <div class="field">
+        <label>سنة الدراسة</label>
+        <div class="chip-row"><div class="chip">أولى</div><div class="chip selected">ثانية</div><div class="chip">ثالثة</div><div class="chip">رابعة+</div></div>
+      </div>
+      <div class="field"><label>الجنسية</label><div class="input-wrap"><input placeholder="سعودي"></div></div>
+      <div class="field"><label>مكان الإقامة</label><div class="input-wrap"><input placeholder="المدينة"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div></div>
+      <div class="section-title" style="margin-top:6px;">صورة الهوية</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+        <div class="upload-box"><svg class="icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><div class="lbl">الوجه</div></div>
+        <div class="upload-box"><svg class="icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><div class="lbl">الظهر</div></div>
+      </div>
+      <button class="btn-primary">إكمال التسجيل <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- 11. OTP VERIFICATION -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>11 — تأكيد الحساب (كود التحقق)</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 32px; background:var(--bg-canvas);">
+      <div style="width:72px; height:72px; border-radius:50%; background:var(--bg-primary-subtle); color:var(--blue-600); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+        <svg class="icon-xl" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      </div>
+      <div style="font-size:18px; font-weight:800; text-align:center;">تأكيد الحساب</div>
+      <div style="font-size:12.5px; color:var(--text-secondary); text-align:center; margin-top:8px; line-height:1.7;">تم إرسال رمز مكوّن من 5 أرقام إلى بريدك الإلكتروني<br><span dir="ltr" style="font-weight:700; color:var(--text-primary);">ahmed@university.edu</span></div>
+      <div class="otp-row">
+        <div class="otp-box filled">٤</div><div class="otp-box filled">٢</div><div class="otp-box filled">٩</div><div class="otp-box">-</div><div class="otp-box">-</div>
+      </div>
+      <div style="font-size:12px; color:var(--text-tertiary); font-weight:600; margin-bottom:24px;">إعادة الإرسال خلال <span style="color:var(--blue-600); font-weight:800;">00:45</span></div>
+      <button class="btn-primary">تأكيد <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- 12. SETTINGS -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>12 — الإعدادات</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header"><div class="m-title">الإعدادات</div></div>
+    <div class="m-body">
+      <div class="section-title" style="margin-top:0;">الإشعارات</div>
+      <div class="card">
+        <div class="setting-row"><div><div class="setting-label">إشعارات طلبات السكن</div><div class="setting-sub">تحديثات حالة الطلب والدفع</div></div><div class="toggle on"><div class="knob"></div></div></div>
+        <div class="setting-row"><div><div class="setting-label">إشعارات الشكاوى والاقتراحات</div><div class="setting-sub">ردود الإدارة</div></div><div class="toggle on"><div class="knob"></div></div></div>
+        <div class="setting-row"><div><div class="setting-label">إشعارات عامة</div><div class="setting-sub">إعلانات وتنبيهات المدينة الجامعية</div></div><div class="toggle"><div class="knob"></div></div></div>
+      </div>
+
+      <div class="section-title">الخصوصية والأمان</div>
+      <div class="card">
+        <div class="menu-row"><div class="menu-ic"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="menu-label">تغيير كلمة المرور</div><svg class="icon icon-sm" style="color:var(--text-tertiary);" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+        <div class="menu-row"><div class="menu-ic"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div><div class="menu-label">سياسة الخصوصية</div><svg class="icon icon-sm" style="color:var(--text-tertiary);" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+      </div>
+
+      <div class="section-title">الملف الشخصي</div>
+      <div class="card">
+        <div class="menu-row"><div class="menu-ic"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="menu-label">عرض/تعديل البروفايل</div><svg class="icon icon-sm" style="color:var(--text-tertiary);" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></div>
+        <div class="menu-row" style="border-bottom:none;"><div class="menu-ic" style="background:var(--bg-danger-subtle); color:var(--red-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></div><div class="menu-label" style="color:var(--red-600);">تسجيل الخروج</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 13. NEW SERVICE REQUEST DETAIL -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>13 — طلب خدمة جديدة (تفاصيل الطلب)</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header"><div class="m-title">طلب خدمة جديدة</div><div class="m-sub">اختر نوع الخدمة واكتب التفاصيل</div></div>
+    <div class="m-body">
+      <div class="section-title" style="margin-top:0;">نوع الخدمة</div>
+      <div class="cat-grid" style="margin-bottom:20px;">
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 20 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg></div><div class="cat-label">إنترنت</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-primary-subtle); color:var(--blue-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22c4.2 0 7-2.5 7-6.5C19 10 12 2 12 2S5 10 5 15.5C5 19.5 7.8 22 12 22Z"/></svg></div><div class="cat-label">سباكة</div></div>
+        <div class="cat-item selected"><div class="cat-ic" style="background:var(--bg-warning-subtle); color:var(--amber-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></div><div class="cat-label">كهرباء</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--gray-200); color:var(--gray-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><div class="cat-label">أخرى</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div class="cat-label">تنظيف</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-accent-subtle); color:var(--violet-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></div><div class="cat-label">مفاتيح</div></div>
+      </div>
+      <div class="field">
+        <label>وصف المشكلة</label>
+        <div class="input-wrap" style="align-items:flex-start; height:120px;"><textarea placeholder="اشرح المشكلة بالتفصيل..." style="height:100%;"></textarea></div>
+      </div>
+      <div class="upload-box" style="margin-bottom:18px;"><svg class="icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><div class="lbl">إرفاق صورة (اختياري)</div></div>
+      <button class="btn-primary"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> إرسال الطلب</button>
+    </div>
+  </div>
+</div>
+
+<!-- 14. NEW COMPLAINT/SUGGESTION FORM -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>14 — شكوى أو اقتراح جديد</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header"><div class="m-title">شكوى أو اقتراح جديد</div><div class="m-sub">شاركنا رأيك أو مشكلتك</div></div>
+    <div class="m-body">
+      <div class="field">
+        <label>النوع</label>
+        <div class="chip-row"><div class="chip selected">شكوى</div><div class="chip">اقتراح</div></div>
+      </div>
+      <div class="field"><label>العنوان</label><div class="input-wrap"><input placeholder="مثال: مشكلة في التكييف"></div></div>
+      <div class="field">
+        <label>الوصف</label>
+        <div class="input-wrap" style="align-items:flex-start; height:150px;"><textarea placeholder="اشرح المشكلة أو الاقتراح بالتفصيل..." style="height:100%;"></textarea></div>
+      </div>
+      <button class="btn-primary"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> إرسال</button>
+    </div>
+  </div>
+</div>
+
+<!-- 15. GROUP INVITE CONFIRM DIALOG + MAX MEMBERS -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>15 — الغروبات: تأكيد قبول دعوة (Dialog) + تعطيل الدعوة عند الاكتمال</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header"><div class="m-title">الغروبات</div><div class="m-sub">إدارة غروبك ودعوات الانضمام</div></div>
+    <div class="m-body">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <span class="pill" style="background:var(--bg-success-subtle); color:var(--text-success);">4 / 4 أعضاء — مكتمل</span>
+          <span style="font-size:14px; color:var(--text-secondary); font-weight:600;">غروبي الحالي</span>
+        </div>
+        <div class="code-row" style="margin-bottom:14px;">
+          <div class="copy-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> نسخ</div>
+          <div><div class="code-txt">GRP-2025-A204</div><div style="font-size:10.5px; color:var(--text-tertiary); margin-top:2px;">كود الغروب</div></div>
+        </div>
+        <div class="member-row"><div class="avatar-sm">أم</div><div><div class="m-name-row">أحمد محمد</div><div class="m-role"><svg class="icon-sm" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7Z"/></svg> قائد الغروب</div></div></div>
+        <div class="member-row"><div class="avatar-sm">خس</div><div class="m-name-row">خالد سعيد</div></div>
+        <div class="member-row"><div class="avatar-sm">عف</div><div class="m-name-row">عمر فهد</div></div>
+        <div class="member-row" style="border-bottom:none;"><div class="avatar-sm">يع</div><div class="m-name-row">يوسف علي</div></div>
+        <button class="btn-primary disabled" style="margin-top:14px; cursor:not-allowed;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> اكتمل عدد الأعضاء (4/4)</button>
+      </div>
+    </div>
+
+    <!-- confirmation dialog overlay -->
+    <div class="overlay">
+      <div class="dialog">
+        <div class="dialog-ic"><svg class="icon-lg" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="dialog-title">تأكيد قبول الدعوة</div>
+        <div class="dialog-sub">هل أنت متأكد أنك تريد الانضمام إلى<br><strong>غروب الوحدة ب</strong> بدعوة من محمد أحمد؟<br>سيتم إخراجك من أي غروب حالي.</div>
+        <div class="dialog-actions">
+          <button class="btn-outline">إلغاء</button>
+          <button class="btn-primary" style="box-shadow:none;">تأكيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 16. HOME WITH ADS SWIPER -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>16 — الرئيسية (محدّثة: Swiper إعلانات الإدارة)</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header" style="padding-bottom:20px;"><div class="m-title" style="font-size:13px; font-weight:500; opacity:.85;">مرحباً بك</div><div style="font-size:22px; font-weight:800; margin-top:4px;">أحمد محمد</div></div>
+    <div class="m-body" style="padding-top:20px;">
+      <div class="swiper">
+        <div class="swiper-slide">
+          <div class="s-title">فعالية الترحيب بالطلاب الجدد 🎉</div>
+          <div class="s-sub">الأحد القادم — الساحة الرئيسية</div>
+        </div>
+        <div class="swiper-slide alt">
+          <div class="s-title">تمديد فترة سداد الرسوم</div>
+          <div class="s-sub">حتى نهاية الشهر الحالي</div>
+        </div>
+        <div class="swiper-slide">
+          <div class="s-title">صيانة دورية لشبكة الإنترنت</div>
+          <div class="s-sub">الخميس، من 2-4 عصراً</div>
+        </div>
+      </div>
+      <div class="swiper-dots"><span class="active"></span><span></span><span></span></div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <span class="pill" style="background:var(--bg-success-subtle); color:var(--text-success); display:flex; align-items:center; gap:4px;"><svg class="icon-sm" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg> مقبول</span>
+          <span style="font-size:14px; color:var(--text-secondary); font-weight:600;">حالة السكن</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <div><div style="font-size:11.5px; color:var(--text-tertiary); font-weight:600; margin-bottom:4px;">المبنى / الوحدة</div><div style="font-size:17px; font-weight:800;">الوحدة أ</div></div>
+          <div style="text-align:end;"><div style="font-size:11.5px; color:var(--text-tertiary); font-weight:600; margin-bottom:4px;">رقم الغرفة</div><div style="font-size:17px; font-weight:800;">A-204</div></div>
+        </div>
+      </div>
+
+      <div class="section-title">الوصول السريع</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="card" style="padding:16px;"><div class="cat-ic" style="background:var(--bg-success-subtle); color:var(--green-600); margin-bottom:16px;"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div style="font-size:13.5px; font-weight:700;">إنشاء / الانضمام لغروب</div></div>
+        <div class="card" style="padding:16px;"><div class="cat-ic" style="background:var(--bg-primary-subtle); color:var(--blue-600); margin-bottom:16px;"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/></svg></div><div style="font-size:13.5px; font-weight:700;">تقديم طلب سكن</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

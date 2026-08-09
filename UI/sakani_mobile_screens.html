@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سكني - شاشات الموبايل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-50:#F0F9FF; --blue-100:#E0F2FE; --blue-400:#38BDF8; --blue-500:#0EA5E9; --blue-600:#0284C7; --blue-700:#0369A1;
+    --green-50:#F0FDF4; --green-600:#16A34A; --green-700:#15803D;
+    --amber-50:#FFFBEB; --amber-500:#F59E0B; --amber-600:#D97706; --amber-700:#B45309;
+    --red-50:#FEF2F2; --red-600:#DC2626; --red-700:#B91C1C;
+    --violet-50:#F5F3FF; --violet-500:#8B5CF6; --violet-600:#7C3AED;
+    --gray-0:#FFFFFF; --gray-50:#F8FAFC; --gray-100:#F1F5F9; --gray-200:#E2E8F0;
+    --gray-300:#CBD5E1; --gray-400:#94A3B8; --gray-500:#64748B; --gray-600:#475569;
+    --gray-700:#334155; --gray-800:#1E293B; --gray-900:#0F172A;
+    --bg-canvas:var(--gray-50); --bg-surface:var(--gray-0); --bg-primary:var(--blue-500);
+    --bg-primary-subtle:var(--blue-50); --bg-success-subtle:var(--green-50);
+    --bg-warning-subtle:var(--amber-50); --bg-danger-subtle:var(--red-50); --bg-accent-subtle:var(--violet-50);
+    --text-primary:var(--gray-900); --text-secondary:var(--gray-500); --text-tertiary:var(--gray-400);
+    --text-on-primary:#fff; --text-success:var(--green-700); --text-warning:var(--amber-700);
+    --border-default:var(--gray-200); --border-subtle:var(--gray-100);
+    --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px; --radius-2xl:28px; --radius-full:999px;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+    --shadow-md:0 4px 12px -2px rgba(15,23,42,.08);
+    --shadow-lg:0 10px 24px -4px rgba(15,23,42,.10);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ font-family:'Cairo',sans-serif; background:var(--gray-100); color:var(--text-primary); padding:40px; }
+  .stage{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; justify-content:center; }
+  .phone-wrap{display:flex; flex-direction:column; align-items:center;}
+  .stage-label{ font-size:13px; font-weight:700; color:var(--text-secondary); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .stage-label .dot{width:8px; height:8px; border-radius:50%; background:var(--bg-primary);}
+  .icon{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; display:block;}
+  .icon-sm{width:16px; height:16px;} .icon-lg{width:22px; height:22px;} .icon-xl{width:28px; height:28px;}
+
+  .phone{ width:390px; height:820px; background:var(--bg-canvas); border-radius:44px; box-shadow:0 24px 60px -16px rgba(15,23,42,.35), 0 0 0 10px var(--gray-900); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:28px; background:var(--gray-900); border-radius:0 0 18px 18px; z-index:20; }
+
+  .m-header{ background:linear-gradient(135deg,var(--blue-500),var(--blue-600)); padding:56px 24px 30px; color:#fff; position:relative; }
+  .m-header.tall{padding-bottom:60px;}
+  .m-header.tall::after{ content:""; position:absolute; inset:auto 0 0 0; height:60px; background:var(--bg-canvas); border-radius:32px 32px 0 0; }
+  .m-header .m-title{font-size:19px; font-weight:800;}
+  .m-header .m-sub{font-size:12px; opacity:.85; margin-top:4px; font-weight:500;}
+  .m-welcome{font-size:13px; opacity:.85; font-weight:500;}
+  .m-name{font-size:22px; font-weight:800; margin-top:4px;}
+  .m-term{font-size:12.5px; opacity:.8; margin-top:6px; font-weight:500;}
+
+  .m-body{flex:1; overflow-y:auto; padding:20px 20px 100px;}
+  .m-body.pull{margin-top:-46px; padding-top:0; position:relative; z-index:5;}
+  .m-body.plain{padding-top:24px;}
+
+  .status-card{ background:var(--bg-surface); border-radius:var(--radius-2xl); box-shadow:var(--shadow-lg); padding:22px; border:1px solid var(--border-subtle); }
+  .status-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+  .badge{ display:inline-flex; align-items:center; gap:6px; background:var(--bg-success-subtle); color:var(--text-success); font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:var(--radius-full); }
+  .badge.warn{background:var(--bg-warning-subtle); color:var(--text-warning);}
+  .badge.info{background:var(--bg-primary-subtle); color:var(--blue-600);}
+  .status-title{font-size:14px; color:var(--text-secondary); font-weight:600;}
+  .status-grid{display:flex; justify-content:space-between; margin-bottom:16px;}
+  .status-item .label{font-size:11.5px; color:var(--text-tertiary); font-weight:600; margin-bottom:4px;}
+  .status-item .value{font-size:17px; font-weight:800;}
+  .status-item{text-align:start;} .status-item:last-child{text-align:end;}
+  .pay-strip{ background:var(--bg-warning-subtle); border-radius:var(--radius-lg); padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+  .pay-strip .l1{font-size:11.5px; color:var(--amber-700); font-weight:600; display:flex; align-items:center; gap:5px;}
+  .pay-strip .l2{font-size:14.5px; font-weight:800; color:var(--gray-900); margin-top:2px;}
+
+  .section-title{font-size:15px; font-weight:800; margin:22px 0 14px; display:flex; justify-content:space-between; align-items:center;}
+  .section-title .count{background:var(--red-600); color:#fff; font-size:11px; font-weight:800; padding:2px 8px; border-radius:var(--radius-full);}
+  .quick-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .qcard{ background:var(--bg-surface); border-radius:var(--radius-xl); padding:16px; box-shadow:var(--shadow-sm); border:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:20px; }
+  .qicon{ width:40px; height:40px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; }
+  .qcard .qtitle{font-size:13.5px; font-weight:700;}
+
+  .activity{background:var(--bg-surface); border-radius:var(--radius-xl); border:1px solid var(--border-subtle); overflow:hidden; box-shadow:var(--shadow-sm);}
+  .a-row{display:flex; align-items:center; gap:12px; padding:15px 16px; border-bottom:1px solid var(--border-subtle);}
+  .a-row:last-child{border-bottom:none;}
+  .a-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .a-ic{width:36px; height:36px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .a-text{font-size:13px; font-weight:700;}
+  .a-time{font-size:11.5px; color:var(--text-tertiary); margin-top:2px;}
+  .unread-dot{width:8px; height:8px; border-radius:50%; background:var(--blue-500); flex-shrink:0; margin-inline-start:auto;}
+
+  .bottom-nav{ position:absolute; bottom:0; left:0; right:0; background:var(--bg-surface); border-top:1px solid var(--border-subtle); display:flex; justify-content:space-around; padding:10px 8px 26px; z-index:10; }
+  .nav-item{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10.5px; font-weight:700; color:var(--text-tertiary);}
+  .nav-item.active{color:var(--bg-primary);}
+  .nav-ic{width:22px; height:22px; display:flex; align-items:center; justify-content:center;}
+
+  .field{margin-bottom:16px;}
+  .field label{font-size:12.5px; font-weight:700; color:var(--text-secondary); margin-bottom:7px; display:block;}
+  .input-wrap{display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1.5px solid var(--border-default); border-radius:var(--radius-lg); padding:12px 14px;}
+  .input-wrap input, .input-wrap textarea{border:none; outline:none; background:transparent; font-family:'Cairo',sans-serif; font-size:13.5px; flex:1; color:var(--text-primary); resize:none;}
+  .input-wrap svg{color:var(--text-tertiary); flex-shrink:0;}
+  .btn-primary{ background:var(--bg-primary); color:#fff; border:none; border-radius:var(--radius-lg); padding:14px; font-family:'Cairo',sans-serif; font-weight:700; font-size:14.5px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 20px -6px rgba(14,165,233,.5); cursor:pointer; }
+  .btn-secondary{ background:var(--bg-primary-subtle); color:var(--blue-600); border:none; border-radius:var(--radius-lg); padding:12px; font-family:'Cairo',sans-serif; font-weight:700; font-size:13.5px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+  .link{color:var(--blue-600); font-weight:700; font-size:12.5px; text-decoration:none;}
+
+  .logo-block{display:flex; flex-direction:column; align-items:center; padding:70px 0 26px;}
+  .logo-mark{width:66px; height:66px; border-radius:var(--radius-xl); background:var(--bg-primary-subtle); display:flex; align-items:center; justify-content:center; margin-bottom:14px;}
+  .logo-title{font-size:24px; font-weight:800;}
+  .logo-sub{font-size:12.5px; color:var(--text-secondary); margin-top:4px;}
+
+  .card{background:var(--bg-surface); border-radius:var(--radius-xl); border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); padding:18px;}
+
+  .member-row{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border-subtle);}
+  .member-row:last-child{border-bottom:none;}
+  .avatar-sm{width:38px; height:38px; border-radius:50%; background:var(--bg-primary-subtle); color:var(--blue-600); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800; flex-shrink:0;}
+  .m-name-row{font-size:13px; font-weight:700;}
+  .m-role{font-size:10.5px; color:var(--amber-600); font-weight:700; display:flex; align-items:center; gap:3px; margin-top:2px;}
+
+  .code-row{display:flex; align-items:center; justify-content:space-between; background:var(--bg-canvas); border-radius:var(--radius-lg); padding:12px 14px;}
+  .code-row .code-txt{font-weight:800; font-size:13.5px;}
+  .copy-btn{display:flex; align-items:center; gap:5px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-md); padding:6px 10px; font-size:11.5px; font-weight:700; color:var(--text-secondary);}
+
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{padding:9px 16px; border-radius:var(--radius-full); font-size:12.5px; font-weight:700; border:1.5px solid var(--border-default); color:var(--text-secondary); background:var(--bg-surface);}
+  .chip.selected{background:var(--bg-primary); color:#fff; border-color:var(--bg-primary);}
+
+  .stepper{display:flex; align-items:center; margin-bottom:22px;}
+  .step{display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; position:relative;}
+  .step-circle{width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; z-index:2;}
+  .step.done .step-circle{background:var(--green-600); color:#fff;}
+  .step.current .step-circle{background:var(--bg-primary); color:#fff;}
+  .step.pending .step-circle{background:var(--gray-200); color:var(--text-tertiary);}
+  .step-label{font-size:10px; font-weight:700; color:var(--text-tertiary); text-align:center;}
+  .step-line{position:absolute; top:14px; right:50%; width:100%; height:2px; background:var(--gray-200); z-index:1;}
+  .step.done .step-line{background:var(--green-600);}
+  .step:first-child .step-line{display:none;}
+
+  .cat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .cat-item{background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:var(--shadow-sm);}
+  .cat-ic{width:36px; height:36px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center;}
+  .cat-label{font-size:11px; font-weight:700; text-align:center;}
+
+  .list-card{background:var(--bg-surface); border-radius:var(--radius-xl); border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); padding:16px; margin-bottom:12px;}
+  .list-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .list-title{font-size:13.5px; font-weight:800; margin-top:8px;}
+  .list-desc{font-size:12px; color:var(--text-secondary); margin-top:4px; line-height:1.5;}
+  .list-time{font-size:11px; color:var(--text-tertiary); margin-top:8px;}
+  .pill{font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:var(--radius-full); display:inline-block;}
+
+  .profile-head{display:flex; flex-direction:column; align-items:center; padding:8px 0 22px;}
+  .avatar-xl{width:84px; height:84px; border-radius:50%; background:linear-gradient(135deg,var(--blue-400),var(--blue-600)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; box-shadow:var(--shadow-md); border:4px solid var(--bg-surface);}
+  .profile-name{font-size:18px; font-weight:800; margin-top:12px;}
+  .profile-sub{font-size:12px; color:var(--text-secondary); margin-top:3px;}
+  .info-row{display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--border-subtle);}
+  .info-row:last-child{border-bottom:none;}
+  .info-label{font-size:12px; color:var(--text-tertiary); font-weight:600; display:flex; align-items:center; gap:8px;}
+  .info-val{font-size:13px; font-weight:700;}
+  .menu-row{display:flex; align-items:center; gap:12px; padding:14px 4px; cursor:pointer;}
+  .menu-ic{width:34px; height:34px; border-radius:var(--radius-md); background:var(--bg-canvas); display:flex; align-items:center; justify-content:center; color:var(--text-secondary);}
+  .menu-label{font-size:13px; font-weight:700; flex:1;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+<!-- 1. LOGIN -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>1 — تسجيل الدخول</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-body plain" style="background:var(--bg-canvas);">
+      <div class="logo-block">
+        <div class="logo-mark"><svg class="icon-xl" style="color:var(--blue-600); stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>
+        <div class="logo-title">سكني</div>
+        <div class="logo-sub">تطبيق المدينة الجامعية</div>
+      </div>
+      <div class="card" style="box-shadow:var(--shadow-lg);">
+        <div style="font-size:17px; font-weight:800; margin-bottom:4px;">تسجيل الدخول</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:20px;">أدخل بياناتك للوصول إلى حسابك</div>
+        <div class="field">
+          <label>البريد الإلكتروني</label>
+          <div class="input-wrap">
+            <input placeholder="example@university.edu" dir="ltr" style="text-align:right;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:8px;">
+          <label>كلمة المرور</label>
+          <div class="input-wrap">
+            <input type="password" value="••••••••" dir="ltr" style="text-align:right;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+        </div>
+        <div style="text-align:start; margin-bottom:20px;"><a class="link">نسيت كلمة المرور؟</a></div>
+        <button class="btn-primary">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>
+          تسجيل الدخول
+        </button>
+        <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-secondary);">ليس لديك حساب؟ <a class="link">إنشاء حساب جديد</a></div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:24px; font-size:11.5px; color:var(--text-tertiary); font-weight:600;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+        بوابتك للسكن الجامعي
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. HOME -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>2 — الرئيسية</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header tall">
+      <div class="m-welcome">مرحباً بك</div>
+      <div class="m-name">أحمد محمد</div>
+      <div class="m-term">الفصل الدراسي الثاني — 2025/2026</div>
+    </div>
+    <div class="m-body pull">
+      <div class="status-card">
+        <div class="status-top">
+          <span class="badge"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg> مقبول</span>
+          <span class="status-title">حالة السكن</span>
+        </div>
+        <div class="status-grid">
+          <div class="status-item"><div class="label">المبنى / الوحدة</div><div class="value">الوحدة أ</div></div>
+          <div class="status-item"><div class="label">رقم الغرفة</div><div class="value">A-204</div></div>
+        </div>
+        <div class="pay-strip">
+          <div>
+            <div class="l1"><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--amber-700);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 12 يوم متبقي على الدفع</div>
+            <div class="l2">PAY-2025-4521</div>
+          </div>
+          <svg class="icon icon-lg" viewBox="0 0 24 24" style="color:var(--amber-600);"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        </div>
+      </div>
+      <div class="section-title">الوصول السريع</div>
+      <div class="quick-grid">
+        <div class="qcard"><div class="qicon" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="qtitle">إنشاء / الانضمام لغروب</div></div>
+        <div class="qcard"><div class="qicon" style="background:var(--bg-primary-subtle); color:var(--blue-600);"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div><div class="qtitle">تقديم طلب سكن</div></div>
+        <div class="qcard"><div class="qicon" style="background:var(--bg-accent-subtle); color:var(--violet-600);"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="qtitle">شكوى أو اقتراح</div></div>
+        <div class="qcard"><div class="qicon" style="background:var(--bg-warning-subtle); color:var(--amber-600);"><svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><div class="qtitle">طلب خدمة</div></div>
+      </div>
+      <div class="section-title">آخر النشاطات</div>
+      <div class="activity">
+        <div class="a-row"><div class="a-dot" style="background:var(--green-600);"></div><div><div class="a-text">تم قبول طلب السكن الخاص بك</div><div class="a-time">منذ ساعتين</div></div></div>
+        <div class="a-row"><div class="a-dot" style="background:var(--blue-500);"></div><div><div class="a-text">انضممت إلى غروب الوحدة أ</div><div class="a-time">أمس</div></div></div>
+        <div class="a-row"><div class="a-dot" style="background:var(--gray-400);"></div><div><div class="a-text">تم تحديث بيانات حسابك</div><div class="a-time">منذ 3 أيام</div></div></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item active"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. GROUPS -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>3 — الغروبات</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header" style="padding-bottom:26px;">
+      <div class="m-title">الغروبات</div>
+      <div class="m-sub">إدارة غروبك ودعوات الانضمام</div>
+    </div>
+    <div class="m-body plain">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="status-top" style="margin-bottom:14px;">
+          <span class="badge info"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 4 / 8 أعضاء</span>
+          <span class="status-title">غروبي الحالي</span>
+        </div>
+        <div class="code-row" style="margin-bottom:14px;">
+          <div class="copy-btn"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> نسخ</div>
+          <div><div class="code-txt">GRP-2025-A204</div><div style="font-size:10.5px; color:var(--text-tertiary); margin-top:2px;">كود الغروب</div></div>
+        </div>
+        <div style="font-size:12.5px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">الأعضاء</div>
+        <div class="member-row"><div class="avatar-sm">أم</div><div><div class="m-name-row">أحمد محمد</div><div class="m-role"><svg class="icon-sm" style="stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7Z"/></svg> قائد الغروب</div></div></div>
+        <div class="member-row"><div class="avatar-sm">خس</div><div class="m-name-row">خالد سعيد</div></div>
+        <div class="member-row"><div class="avatar-sm">عف</div><div class="m-name-row">عمر فهد</div></div>
+        <div class="member-row" style="border-bottom:none;"><div class="avatar-sm">يع</div><div class="m-name-row">يوسف علي</div></div>
+        <button class="btn-primary" style="margin-top:14px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg> دعوة عضو جديد</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:800; margin-bottom:12px;">الانضمام بكود</div>
+        <div style="display:flex; gap:8px;">
+          <div class="input-wrap" style="flex:1;"><input placeholder="أدخل كود الغروب"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></div>
+          <button class="btn-primary" style="width:auto; padding:0 20px;">انضمام</button>
+        </div>
+      </div>
+
+      <div class="section-title">دعوات الانضمام <span class="count">2</span></div>
+      <div class="card" style="display:flex; align-items:center; gap:12px; padding:14px;">
+        <div style="display:flex; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--bg-success-subtle); color:var(--green-600); display:flex; align-items:center; justify-content:center;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--bg-danger-subtle); color:var(--red-600); display:flex; align-items:center; justify-content:center;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+        </div>
+        <div style="flex:1;"><div class="m-name-row">دعوة من محمد أحمد</div><div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">غروب الوحدة ب</div></div>
+        <div class="avatar-sm" style="background:var(--bg-success-subtle); color:var(--green-600);">م</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item active"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. HOUSING REQUEST -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>4 — طلب السكن</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header" style="padding-bottom:26px;">
+      <div class="m-title">تقديم طلب سكن</div>
+      <div class="m-sub">أكمل بياناتك لتقديم طلب سكن جديد</div>
+    </div>
+    <div class="m-body plain">
+      <div class="stepper">
+        <div class="step done"><div class="step-line"></div><div class="step-circle"><svg class="icon-sm" style="stroke:#fff; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div class="step-label">الإرسال</div></div>
+        <div class="step current"><div class="step-line"></div><div class="step-circle">2</div><div class="step-label">المراجعة</div></div>
+        <div class="step pending"><div class="step-line"></div><div class="step-circle">3</div><div class="step-label">القرار</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <div style="font-size:14px; font-weight:800; margin-bottom:14px;">نوع السكن</div>
+        <div class="chip-row">
+          <div class="chip selected">غرفة مشتركة</div>
+          <div class="chip">غرفة فردية</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <div style="font-size:14px; font-weight:800; margin-bottom:14px;">المبنى المفضل</div>
+        <div class="chip-row">
+          <div class="chip selected">الوحدة أ</div>
+          <div class="chip">الوحدة ب</div>
+          <div class="chip">الوحدة ج</div>
+          <div class="chip">بدون تفضيل</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>ملاحظات إضافية (اختياري)</label>
+        <div class="input-wrap" style="align-items:flex-start; height:90px;">
+          <textarea placeholder="مثال: أفضل السكن قرب أصدقائي بالغروب..." style="height:100%;"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-primary"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/></svg> إرسال الطلب</button>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item active"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. SERVICE REQUEST -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>5 — طلب خدمة</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header" style="padding-bottom:26px;">
+      <div class="m-title">طلب خدمة</div>
+      <div class="m-sub">اطلب خدمات الصيانة والدعم</div>
+    </div>
+    <div class="m-body plain">
+      <button class="btn-primary" style="margin-bottom:20px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg> طلب خدمة جديدة</button>
+
+      <div class="cat-grid" style="margin-bottom:22px;">
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 20 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg></div><div class="cat-label">إنترنت</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-primary-subtle); color:var(--blue-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22c4.2 0 7-2.5 7-6.5C19 10 12 2 12 2S5 10 5 15.5C5 19.5 7.8 22 12 22Z"/></svg></div><div class="cat-label">سباكة</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-warning-subtle); color:var(--amber-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></div><div class="cat-label">كهرباء</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--gray-200); color:var(--gray-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><div class="cat-label">أخرى</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div class="cat-label">تنظيف</div></div>
+        <div class="cat-item"><div class="cat-ic" style="background:var(--bg-accent-subtle); color:var(--violet-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></div><div class="cat-label">مفاتيح</div></div>
+      </div>
+
+      <div class="section-title">طلباتي السابقة</div>
+      <div class="list-card">
+        <div class="list-top">
+          <div class="a-ic" style="background:var(--bg-warning-subtle); color:var(--amber-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></div>
+          <span class="pill" style="background:var(--bg-warning-subtle); color:var(--text-warning);">قيد التنفيذ</span>
+        </div>
+        <div class="list-title">مشكلة في الإضاءة</div>
+        <div class="list-time">منذ يومين</div>
+      </div>
+      <div class="list-card">
+        <div class="list-top">
+          <div class="a-ic" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22c4.2 0 7-2.5 7-6.5C19 10 12 2 12 2S5 10 5 15.5C5 19.5 7.8 22 12 22Z"/></svg></div>
+          <span class="pill" style="background:var(--bg-success-subtle); color:var(--text-success);">مكتملة</span>
+        </div>
+        <div class="list-title">تسريب بسيط بالحمام</div>
+        <div class="list-time">منذ أسبوع</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. COMPLAINTS -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>6 — الشكاوى والاقتراحات</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header" style="padding-bottom:26px;">
+      <div class="m-title">الشكاوى والاقتراحات</div>
+      <div class="m-sub">أرسل شكواك أو اقتراحك</div>
+    </div>
+    <div class="m-body plain">
+      <button class="btn-primary" style="margin-bottom:20px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> شكوى أو اقتراح جديد</button>
+
+      <div class="section-title">السابقة</div>
+      <div class="list-card">
+        <div class="list-top">
+          <div class="a-ic" style="background:var(--bg-warning-subtle); color:var(--amber-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <span class="pill" style="background:var(--bg-warning-subtle); color:var(--text-warning);">قيد المعالجة</span>
+        </div>
+        <div class="list-title">مشكلة في التكييف</div>
+        <div class="list-desc">التكييف لا يعمل بشكل جيد في غرفتي</div>
+        <div class="list-time">منذ 3 أيام</div>
+      </div>
+
+      <!-- Detail thread example -->
+      <div class="section-title" style="margin-top:24px;">تفاصيل: اقتراح تحسين المقصف</div>
+      <div class="card">
+        <div style="display:flex; gap:10px; margin-bottom:14px;">
+          <div class="avatar-sm" style="flex-shrink:0;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div style="background:var(--bg-primary-subtle); border-radius:var(--radius-lg); padding:12px 14px; flex:1;">
+            <div style="font-size:12.5px; font-weight:600;">أقترح توسيع ساعات عمل المقصف</div>
+          </div>
+        </div>
+        <div style="font-size:10.5px; color:var(--text-tertiary); margin-bottom:16px; margin-inline-start:48px;">منذ أسبوعين</div>
+        <div style="display:flex; gap:10px; flex-direction:row-reverse;">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--bg-success-subtle); color:var(--green-600); display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
+          <div style="background:var(--bg-success-subtle); border-radius:var(--radius-lg); padding:12px 14px; flex:1;">
+            <div style="font-size:11px; font-weight:800; color:var(--text-success); margin-bottom:4px;">رد الإدارة</div>
+            <div style="font-size:12.5px; font-weight:600;">شكراً لاقتراحك القيّم. تم رفع الاقتراح للإدارة وسيتم النظر فيه.</div>
+          </div>
+        </div>
+        <div style="font-size:10.5px; color:var(--text-tertiary); margin-top:6px; text-align:end; margin-inline-end:48px;">منذ يوم</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. NOTIFICATIONS -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>7 — الإشعارات</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header" style="padding-bottom:26px;">
+      <div class="m-title">الإشعارات</div>
+      <div class="m-sub">آخر التحديثات الخاصة بك</div>
+    </div>
+    <div class="m-body plain">
+      <div style="font-size:12px; font-weight:800; color:var(--text-tertiary); margin-bottom:10px;">اليوم</div>
+      <div class="activity" style="margin-bottom:20px;">
+        <div class="a-row">
+          <div class="a-ic" style="background:var(--bg-success-subtle); color:var(--green-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></div>
+          <div style="flex:1;"><div class="a-text">تم قبول طلب السكن الخاص بك</div><div class="a-time">منذ ساعتين</div></div>
+          <div class="unread-dot"></div>
+        </div>
+        <div class="a-row">
+          <div class="a-ic" style="background:var(--bg-accent-subtle); color:var(--violet-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div style="flex:1;"><div class="a-text">رد الإدارة على اقتراحك</div><div class="a-time">منذ 4 ساعات</div></div>
+          <div class="unread-dot"></div>
+        </div>
+      </div>
+
+      <div style="font-size:12px; font-weight:800; color:var(--text-tertiary); margin-bottom:10px;">أمس</div>
+      <div class="activity" style="margin-bottom:20px;">
+        <div class="a-row">
+          <div class="a-ic" style="background:var(--bg-primary-subtle); color:var(--blue-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <div><div class="a-text">انضممت إلى غروب الوحدة أ</div><div class="a-time">أمس، 6:40 م</div></div>
+        </div>
+        <div class="a-row">
+          <div class="a-ic" style="background:var(--bg-warning-subtle); color:var(--amber-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <div><div class="a-text">تحديث حالة طلب الخدمة</div><div class="a-time">أمس، 2:15 م</div></div>
+        </div>
+      </div>
+
+      <div style="font-size:12px; font-weight:800; color:var(--text-tertiary); margin-bottom:10px;">الأسبوع الماضي</div>
+      <div class="activity">
+        <div class="a-row">
+          <div class="a-ic" style="background:var(--gray-200); color:var(--gray-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div><div class="a-text">تم تحديث بيانات حسابك</div><div class="a-time">منذ 6 أيام</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item active"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. PROFILE -->
+<div class="phone-wrap">
+  <div class="stage-label"><span class="dot"></span>8 — الملف الشخصي</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="m-header tall">
+      <div class="m-title">الملف الشخصي</div>
+    </div>
+    <div class="m-body pull">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="profile-head">
+          <div class="avatar-xl">أم</div>
+          <div class="profile-name">أحمد محمد العتيبي</div>
+          <div class="profile-sub">الرقم الجامعي: 442100215</div>
+        </div>
+        <div class="info-row"><div class="info-label"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> البريد الإلكتروني</div><div class="info-val" dir="ltr">ahmed@university.edu</div></div>
+        <div class="info-row"><div class="info-label"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg> رقم الجوال</div><div class="info-val" dir="ltr">05xxxxxxxx</div></div>
+        <div class="info-row"><div class="info-label"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg> الكلية</div><div class="info-val">علوم الحاسب</div></div>
+      </div>
+
+      <div class="card">
+        <div class="menu-row">
+          <div class="menu-ic"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></div>
+          <div class="menu-label">تعديل البيانات</div>
+          <svg class="icon icon-sm" style="color:var(--text-tertiary);" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <div class="menu-row">
+          <div class="menu-ic"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></div>
+          <div class="menu-label">المستندات</div>
+          <svg class="icon icon-sm" style="color:var(--text-tertiary);" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <div class="menu-row">
+          <div class="menu-ic"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div class="menu-label">الإعدادات</div>
+          <svg class="icon icon-sm" style="color:var(--text-tertiary);" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <div class="menu-row" style="color:var(--red-600);">
+          <div class="menu-ic" style="background:var(--bg-danger-subtle); color:var(--red-600);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></div>
+          <div class="menu-label" style="color:var(--red-600);">تسجيل الخروج</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>الملف</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg></div>الإشعارات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>الغروبات</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18Z"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></div>طلب السكن</div>
+      <div class="nav-item"><div class="nav-ic"><svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7"/><path d="M4 10v10a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V10"/></svg></div>الرئيسية</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
