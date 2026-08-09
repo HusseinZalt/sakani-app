@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../groups/domain/entities/groups_data.dart';
 import '../../../groups/domain/repositories/groups_repository.dart';
+import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../../domain/repositories/housing_request_repository.dart';
 import 'housing_request_state.dart';
@@ -46,7 +47,7 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
     required String roomType,
     required String preferredBuilding,
     String? groupCode,
-    List<String> documentNames = const [],
+    List<HousingDocument> documents = const [],
     String? notes,
   }) async {
     emit(const HousingRequestSubmitting());
@@ -56,7 +57,7 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
       roomType: roomType,
       preferredBuilding: preferredBuilding,
       groupCode: groupCode,
-      documentNames: documentNames,
+      documents: documents,
       notes: notes,
     );
 

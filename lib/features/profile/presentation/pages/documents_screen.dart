@@ -43,7 +43,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = context.watch<UserSessionCubit>().state;
-    final documentNames = _housingRequest?.documentNames ?? const <String>[];
+    final documents = _housingRequest?.documents ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -73,7 +73,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        if (documentNames.isEmpty)
+                        if (documents.isEmpty)
                           CustomCard(
                             child: Center(
                               child: Padding(
@@ -90,10 +90,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             ),
                           )
                         else
-                          for (final name in documentNames) ...[
+                          for (final document in documents) ...[
                             _DocumentTile(
                               icon: Icons.description_outlined,
-                              title: name,
+                              title: document.name,
                               subtitle: 'مرفق بطلب السكن',
                               verified: true,
                             ),

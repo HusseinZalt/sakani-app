@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/utils/relative_time.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
@@ -138,18 +139,6 @@ class _ComplaintCard extends StatelessWidget {
 
   final Complaint complaint;
 
-  String _formatTime(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inDays >= 7) return 'منذ ${(diff.inDays / 7).floor()} أسابيع';
-    if (diff.inDays >= 1) {
-      return 'منذ ${diff.inDays} ${diff.inDays == 1 ? 'يوم' : 'أيام'}';
-    }
-    if (diff.inHours >= 1) {
-      return 'منذ ${diff.inHours} ${diff.inHours == 1 ? 'ساعة' : 'ساعات'}';
-    }
-    return 'منذ قليل';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -228,7 +217,7 @@ class _ComplaintCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            _formatTime(complaint.createdAt),
+            formatRelativeTime(complaint.createdAt),
             style: theme.textTheme.labelSmall?.copyWith(
               color: AppColors.textHint,
             ),

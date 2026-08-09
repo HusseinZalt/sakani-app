@@ -1,4 +1,5 @@
 import '../../../../core/network/api_result.dart';
+import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../../domain/repositories/housing_request_repository.dart';
 import '../datasources/housing_request_remote_data_source.dart';
@@ -26,7 +27,7 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
     required String roomType,
     required String preferredBuilding,
     String? groupCode,
-    List<String> documentNames = const [],
+    List<HousingDocument> documents = const [],
     String? notes,
   }) async {
     try {
@@ -35,7 +36,7 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
         roomType: roomType,
         preferredBuilding: preferredBuilding,
         groupCode: groupCode,
-        documentNames: documentNames,
+        documents: documents,
         notes: notes,
       );
       return ApiResult.success(request);

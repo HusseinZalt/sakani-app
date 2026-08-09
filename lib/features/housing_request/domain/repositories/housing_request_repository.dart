@@ -1,4 +1,5 @@
 import '../../../../core/network/api_result.dart';
+import '../entities/housing_document.dart';
 import '../entities/housing_request.dart';
 
 /// عقد (Interface) طبقة طلب السكن، تعتمد عليه طبقة الـ Presentation دون
@@ -13,7 +14,7 @@ abstract class HousingRequestRepository {
     required String roomType,
     required String preferredBuilding,
     String? groupCode,
-    List<String> documentNames,
+    List<HousingDocument> documents,
     String? notes,
   });
 }

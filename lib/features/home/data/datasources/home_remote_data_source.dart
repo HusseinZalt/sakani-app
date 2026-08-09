@@ -1,3 +1,4 @@
+import '../../../housing_request/data/datasources/housing_request_remote_data_source.dart';
 import '../models/home_dashboard_model.dart';
 
 /// مصدر بيانات لوحة الرئيسية.
@@ -15,15 +16,28 @@ class HomeRemoteDataSource {
   Future<HomeDashboardModel> fetchDashboard() async {
     await Future.delayed(_networkDelay);
 
+    // حالة السكن مُشتقة من طلب السكن الفعلي للمستخدم (وليست قيمة ثابتة)،
+    // حتى تبقى الرئيسية متسقة مع ما قدّمه المستخدم فعلياً بدل الادّعاء
+    // الدائم بأنه مقبول في غرفة A-204 بغض النظر عن الواقع.
+    final myRequest = await HousingRequestRemoteDataSource().fetchMyRequest();
+    final Map<String, dynamic> housingStatus =
+        myRequest == null
+            ? {'status': 'none'}
+            : switch (myRequest.status) {
+              'accepted' => {
+                'status': 'accepted',
+                'buildingUnit': 'الوحدة أ',
+                'roomNumber': 'A-204',
+                'daysUntilPayment': 12,
+                'paymentReference': 'PAY-2025-4521',
+              },
+              'rejected' => {'status': 'rejected'},
+              _ => {'status': 'pending'},
+            };
+
     return HomeDashboardModel.fromJson({
       'studentName': 'أحمد محمد',
-      'housingStatus': {
-        'status': 'accepted',
-        'buildingUnit': 'الوحدة أ',
-        'roomNumber': 'A-204',
-        'daysUntilPayment': 12,
-        'paymentReference': 'PAY-2025-4521',
-      },
+      'housingStatus': housingStatus,
       'announcements': [
         {
           'id': 'ann_1',

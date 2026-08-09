@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/maintenance_request.dart';
 import '../../domain/repositories/maintenance_repository.dart';
@@ -28,13 +30,13 @@ class MaintenanceRepositoryImpl implements MaintenanceRepository {
   Future<ApiResult<MaintenanceRequest>> submitRequest({
     required String description,
     required String category,
-    String? imagePath,
+    Uint8List? imageBytes,
   }) async {
     try {
       final request = await _remoteDataSource.submitRequest(
         description: description,
         category: category,
-        imagePath: imagePath,
+        imageBytes: imageBytes,
       );
       return ApiResult.success(request);
     } on MaintenanceException catch (e) {

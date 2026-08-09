@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 
 /// الكيان (Entity) الذي يمثل طلب خدمة ضمن طبقة الـ Domain.
@@ -7,14 +9,20 @@ import 'package:equatable/equatable.dart';
 class MaintenanceRequest extends Equatable {
   const MaintenanceRequest({
     required this.id,
+    required this.userId,
     required this.description,
     required this.category,
     required this.status,
     required this.createdAt,
     this.imageUrl,
+    this.imageBytes,
   });
 
   final String id;
+
+  /// معرّف صاحب الطلب، لضمان عدم ظهور طلبات مستخدم آخر عند تبديل الحساب
+  /// على نفس الجهاز.
+  final String userId;
   final String description;
 
   /// مفتاح تصنيف الطلب (internet, plumbing, electrical, cleaning, keys, other).
@@ -25,16 +33,22 @@ class MaintenanceRequest extends Equatable {
 
   final DateTime createdAt;
 
-  /// رابط صورة مرفقة بالطلب إن وُجدت.
+  /// رابط صورة مرفقة بالطلب بعد رفعها لخادم حقيقي (غير متوفر بعد).
   final String? imageUrl;
+
+  /// بايتات الصورة المرفقة محلياً — الطريقة الوحيدة المتاحة حالياً لعرض
+  /// الصورة بما أن مصدر البيانات وهمي ولا يرفع أي شيء فعلياً بعد.
+  final Uint8List? imageBytes;
 
   @override
   List<Object?> get props => [
     id,
+    userId,
     description,
     category,
     status,
     createdAt,
     imageUrl,
+    imageBytes,
   ];
 }

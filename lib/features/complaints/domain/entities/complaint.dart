@@ -9,6 +9,7 @@ import 'complaint_reply.dart';
 class Complaint extends Equatable {
   const Complaint({
     required this.id,
+    required this.userId,
     required this.type,
     required this.title,
     required this.description,
@@ -18,6 +19,10 @@ class Complaint extends Equatable {
   });
 
   final String id;
+
+  /// معرّف صاحب الشكوى، لضمان عدم ظهور شكاوى مستخدم آخر عند تبديل الحساب
+  /// على نفس الجهاز.
+  final String userId;
   final String type;
   final String title;
   final String description;
@@ -28,6 +33,7 @@ class Complaint extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    userId,
     type,
     title,
     description,

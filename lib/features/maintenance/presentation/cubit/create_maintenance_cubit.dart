@@ -61,7 +61,7 @@ class CreateMaintenanceCubit extends Cubit<CreateMaintenanceState> {
     final result = await _repository.submitRequest(
       description: description,
       category: category,
-      imagePath: state.pickedImageName,
+      imageBytes: state.pickedImageBytes,
     );
 
     switch (result) {

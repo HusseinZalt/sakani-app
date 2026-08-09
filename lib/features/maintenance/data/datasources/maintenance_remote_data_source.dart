@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_result.dart';
+import '../../../../core/session/mock_current_user.dart';
 import '../models/maintenance_request_model.dart';
 
 /// استثناء مخصص لطبقة الـ Data يحمل رسالة عربية واضحة ونوع الخطأ المناسب،
@@ -26,6 +29,11 @@ class MaintenanceException implements Exception {
 /// ==================================================================
 class MaintenanceRemoteDataSource {
   static const _networkDelay = Duration(milliseconds: 900);
+  static const _placeholderUserId = 'usr_1001';
+  static const _placeholderUserName = 'أحمد محمد';
+
+  static String? _currentUserId;
+  static bool _seedPatched = false;
 
   /// مخزّن وهمي مشترك (static) في الذاكرة، ليبقى متاحاً ومتّسقاً عبر كل
   /// النسخ المُنشأة من هذا المصدر (كل شاشة تُنشئ نسختها الخاصة من
@@ -34,6 +42,7 @@ class MaintenanceRemoteDataSource {
   static final List<MaintenanceRequestModel> _requests = [
     MaintenanceRequestModel(
       id: 'mnt_5001',
+      userId: _placeholderUserId,
       description: 'مشكلة في الإضاءة',
       category: 'electrical',
       status: 'inProgress',
@@ -41,6 +50,7 @@ class MaintenanceRemoteDataSource {
     ),
     MaintenanceRequestModel(
       id: 'mnt_5002',
+      userId: _placeholderUserId,
       description: 'تسريب بسيط بالحمام',
       category: 'plumbing',
       status: 'completed',
@@ -48,18 +58,49 @@ class MaintenanceRemoteDataSource {
     ),
   ];
 
+  /// يحمّل هوية المستخدم الحقيقي الحالي (مرة واحدة)، ويستبدل بها بذور
+  /// البيانات الوهمية المُعلَّمة بالمعرّف البديل.
+  Future<void> _ensureCurrentUser() async {
+    if (_currentUserId != null) return;
+
+    final resolved = await MockCurrentUser.resolve(
+      placeholderId: _placeholderUserId,
+      placeholderName: _placeholderUserName,
+    );
+    _currentUserId = resolved.id;
+
+    if (_seedPatched || resolved.id == _placeholderUserId) return;
+    _seedPatched = true;
+    for (var i = 0; i < _requests.length; i++) {
+      if (_requests[i].userId != _placeholderUserId) continue;
+      _requests[i] = MaintenanceRequestModel(
+        id: _requests[i].id,
+        userId: resolved.id,
+        description: _requests[i].description,
+        category: _requests[i].category,
+        status: _requests[i].status,
+        createdAt: _requests[i].createdAt,
+        imageUrl: _requests[i].imageUrl,
+        imageBytes: _requests[i].imageBytes,
+      );
+    }
+  }
+
   Future<List<MaintenanceRequestModel>> fetchRequests() async {
+    await _ensureCurrentUser();
     await Future.delayed(_networkDelay);
-    final sorted = List<MaintenanceRequestModel>.from(_requests)
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return sorted;
+    final mine =
+        _requests.where((r) => r.userId == _currentUserId).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return mine;
   }
 
   Future<MaintenanceRequestModel> submitRequest({
     required String description,
     required String category,
-    String? imagePath,
+    Uint8List? imageBytes,
   }) async {
+    await _ensureCurrentUser();
     await Future.delayed(_networkDelay);
 
     if (description.trim().length < 10) {
@@ -68,11 +109,12 @@ class MaintenanceRemoteDataSource {
 
     final request = MaintenanceRequestModel(
       id: 'mnt_${DateTime.now().millisecondsSinceEpoch}',
+      userId: _currentUserId!,
       description: description.trim(),
       category: category,
       status: 'pending',
       createdAt: DateTime.now(),
-      imageUrl: imagePath,
+      imageBytes: imageBytes,
     );
 
     _requests.add(request);
@@ -80,9 +122,12 @@ class MaintenanceRemoteDataSource {
   }
 
   Future<void> cancelRequest(String requestId) async {
+    await _ensureCurrentUser();
     await Future.delayed(_networkDelay);
 
-    final index = _requests.indexWhere((request) => request.id == requestId);
+    final index = _requests.indexWhere(
+      (request) => request.id == requestId && request.userId == _currentUserId,
+    );
     if (index == -1) {
       throw const MaintenanceException(
         'لم يتم العثور على الطلب المطلوب إلغاؤه.',

@@ -12,6 +12,7 @@ import '../../../../core/widgets/gradient_header.dart';
 import '../../../groups/data/repositories/groups_repository_impl.dart';
 import '../../../groups/domain/entities/student_group.dart';
 import '../../data/repositories/housing_request_repository_impl.dart';
+import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../cubit/housing_request_cubit.dart';
 import '../cubit/housing_request_state.dart';
@@ -50,7 +51,7 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
   String _requestType = 'individual';
   String _roomType = 'shared';
   String _building = 'unit_a';
-  final List<String> _documentNames = [];
+  final List<HousingDocument> _documents = [];
   StudentGroup? _myGroup;
   final _notesController = TextEditingController();
 
@@ -113,7 +114,10 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
         maxHeight: 1600,
       );
       if (file == null) return;
-      setState(() => _documentNames.add(file.name));
+      final bytes = await file.readAsBytes();
+      setState(
+        () => _documents.add(HousingDocument(name: file.name, bytes: bytes)),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -127,7 +131,7 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
   }
 
   void _removeDocument(int index) {
-    setState(() => _documentNames.removeAt(index));
+    setState(() => _documents.removeAt(index));
   }
 
   void _submit(BuildContext context) {
@@ -143,7 +147,7 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
         );
       return;
     }
-    if (_documentNames.isEmpty) {
+    if (_documents.isEmpty) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -161,7 +165,7 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
       roomType: _roomType,
       preferredBuilding: _building,
       groupCode: _myGroup?.code,
-      documentNames: List.unmodifiable(_documentNames),
+      documents: List.unmodifiable(_documents),
       notes: _notesController.text,
     );
   }
@@ -213,7 +217,7 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
                     requestType: _requestType,
                     roomType: _roomType,
                     building: _building,
-                    documentNames: _documentNames,
+                    documents: _documents,
                     myGroup: _myGroup,
                     notesController: _notesController,
                     isSubmitting: state is HousingRequestSubmitting,
@@ -242,7 +246,7 @@ class _RequestForm extends StatelessWidget {
     required this.requestType,
     required this.roomType,
     required this.building,
-    required this.documentNames,
+    required this.documents,
     required this.myGroup,
     required this.notesController,
     required this.isSubmitting,
@@ -257,7 +261,7 @@ class _RequestForm extends StatelessWidget {
   final String requestType;
   final String roomType;
   final String building;
-  final List<String> documentNames;
+  final List<HousingDocument> documents;
   final StudentGroup? myGroup;
   final TextEditingController notesController;
   final bool isSubmitting;
@@ -447,7 +451,7 @@ class _RequestForm extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                for (var i = 0; i < documentNames.length; i++) ...[
+                for (var i = 0; i < documents.length; i++) ...[
                   if (i > 0) const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -461,15 +465,26 @@ class _RequestForm extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.description_outlined,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
+                        if (documents[i].bytes != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.memory(
+                              documents[i].bytes!,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.description_outlined,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            documentNames[i],
+                            documents[i].name,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w700,
@@ -493,7 +508,7 @@ class _RequestForm extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (documentNames.isNotEmpty) const SizedBox(height: 12),
+                if (documents.isNotEmpty) const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: isSubmitting ? null : onAddDocument,
                   icon: const Icon(Icons.add_rounded),
@@ -598,11 +613,11 @@ class _SubmittedView extends StatelessWidget {
                     request.preferredBuilding,
                   ),
                 ),
-                if (request.documentNames.isNotEmpty) ...[
+                if (request.documents.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _DetailRow(
                     label: 'المستندات',
-                    value: '${request.documentNames.length} مرفق',
+                    value: '${request.documents.length} مرفق',
                   ),
                 ],
                 if (request.notes != null) ...[

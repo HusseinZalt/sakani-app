@@ -6,16 +6,13 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
-import '../../../complaints/data/repositories/complaints_repository_impl.dart';
-import '../../../complaints/domain/entities/complaint.dart';
-import '../../../complaints/presentation/pages/complaint_detail_screen.dart';
 import '../../data/repositories/notifications_repository_impl.dart';
 import '../../domain/entities/app_notification.dart';
 import '../cubit/notifications_cubit.dart';
 import '../cubit/notifications_state.dart';
 
-/// شاشة الإشعارات، مجمّعة حسب اليوم (اليوم/أمس/الأسبوع الماضي) — مطابقة
-/// للشاشة 7 من التصميم المعتمد.
+/// شاشة الإشعارات، مجمّعة حسب اليوم (اليوم/أمس/الأسبوع الماضي/أقدم) —
+/// مطابقة للشاشة 7 من التصميم المعتمد.
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
@@ -31,13 +28,25 @@ class NotificationsScreen extends StatelessWidget {
   }
 }
 
-class _NotificationsView extends StatelessWidget {
+class _NotificationsView extends StatefulWidget {
   const _NotificationsView();
+
+  @override
+  State<_NotificationsView> createState() => _NotificationsViewState();
+}
+
+class _NotificationsViewState extends State<_NotificationsView> {
+  // يمنع فتح شاشتين متتاليتين عند الضغط المزدوج على نفس الإشعار أثناء
+  // التنقل (خاصة إشعارات الشكاوى التي تنتظر جلب البيانات أولاً).
+  bool _isNavigating = false;
 
   Future<void> _handleTap(
     BuildContext context,
     AppNotification notification,
   ) async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
     context.read<NotificationsCubit>().markAsRead(notification.id);
 
     switch (notification.type) {
@@ -48,24 +57,22 @@ class _NotificationsView extends StatelessWidget {
       case 'profile':
         context.goNamed(AppRoutes.profile);
       case 'maintenance':
-        context.pushNamed(AppRoutes.maintenanceList);
+        await context.pushNamed(AppRoutes.maintenanceList);
       case 'complaint':
-        final result = await ComplaintsRepositoryImpl().fetchComplaints();
-        if (!context.mounted) return;
-        final complaints = result.dataOrNull ?? const <Complaint>[];
-        final matched = complaints.where((c) => c.id == notification.relatedId);
-        if (matched.isNotEmpty) {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute(
-              builder: (_) => ComplaintDetailScreen(complaint: matched.first),
-            ),
+        final id = notification.relatedId;
+        if (id != null) {
+          await context.pushNamed(
+            AppRoutes.complaintDetails,
+            pathParameters: {'id': id},
           );
         } else {
-          context.pushNamed(AppRoutes.complaints);
+          await context.pushNamed(AppRoutes.complaints);
         }
       default:
         break;
     }
+
+    _isNavigating = false;
   }
 
   static Map<String, Color> get _colors => {
@@ -99,10 +106,12 @@ class _NotificationsView extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
+    final weekAgo = today.subtract(const Duration(days: 7));
     final groups = <String, List<AppNotification>>{
       'اليوم': [],
       'أمس': [],
       'الأسبوع الماضي': [],
+      'أقدم': [],
     };
 
     for (final notification in notifications) {
@@ -112,8 +121,10 @@ class _NotificationsView extends StatelessWidget {
         groups['اليوم']!.add(notification);
       } else if (day == yesterday) {
         groups['أمس']!.add(notification);
-      } else {
+      } else if (day.isAfter(weekAgo)) {
         groups['الأسبوع الماضي']!.add(notification);
+      } else {
+        groups['أقدم']!.add(notification);
       }
     }
 

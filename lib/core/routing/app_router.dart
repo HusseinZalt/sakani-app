@@ -187,8 +187,13 @@ class AppRouter {
             name: AppRoutes.complaintDetails,
             parentNavigatorKey: rootNavigatorKey,
             builder:
-                (context, state) =>
-                    ComplaintDetailScreen(complaint: state.extra as Complaint),
+                (context, state) => ComplaintDetailScreen(
+                  complaintId: state.pathParameters['id']!,
+                  complaint:
+                      state.extra is Complaint
+                          ? state.extra as Complaint
+                          : null,
+                ),
           ),
         ],
       ),

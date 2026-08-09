@@ -15,6 +15,7 @@ class ComplaintReplyModel extends ComplaintReply {
 class ComplaintModel extends Complaint {
   const ComplaintModel({
     required super.id,
+    required super.userId,
     required super.type,
     required super.title,
     required super.description,
@@ -26,6 +27,7 @@ class ComplaintModel extends Complaint {
   factory ComplaintModel.fromJson(Map<String, dynamic> json) {
     return ComplaintModel(
       id: json['id'] as String,
+      userId: json['userId'] as String,
       type: json['type'] as String,
       title: json['title'] as String,
       description: json['description'] as String,

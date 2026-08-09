@@ -20,6 +20,18 @@ class ComplaintsRepositoryImpl implements ComplaintsRepository {
   }
 
   @override
+  Future<ApiResult<Complaint>> fetchComplaintById(String id) async {
+    try {
+      final complaint = await _remoteDataSource.fetchComplaintById(id);
+      return ApiResult.success(complaint);
+    } on ComplaintsException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
+
+  @override
   Future<ApiResult<Complaint>> submitComplaint({
     required String type,
     required String title,

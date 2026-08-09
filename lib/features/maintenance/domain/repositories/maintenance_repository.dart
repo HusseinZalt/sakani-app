@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_result.dart';
 import '../entities/maintenance_request.dart';
 
@@ -10,12 +12,12 @@ abstract class MaintenanceRepository {
 
   /// إرسال طلب خدمة جديد.
   ///
-  /// [imagePath] مرجع محلي (اسم/مسار الملف) للصورة المرفقة إن وُجدت، وسيُستبدل
-  /// عند ربط الباك إند برابط الصورة الفعلي بعد رفعها.
+  /// [imageBytes] بايتات الصورة المرفقة إن وُجدت، وسيُستبدل عند ربط الباك
+  /// إند برفع فعلي للملف والاحتفاظ برابطه بدلاً من البايتات المحلية.
   Future<ApiResult<MaintenanceRequest>> submitRequest({
     required String description,
     required String category,
-    String? imagePath,
+    Uint8List? imageBytes,
   });
 
   /// إلغاء طلب صيانة قائم عبر معرّفه.

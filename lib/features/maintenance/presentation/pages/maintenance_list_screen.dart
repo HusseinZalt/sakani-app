@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/utils/relative_time.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
@@ -31,8 +32,17 @@ class MaintenanceListScreen extends StatelessWidget {
   }
 }
 
-class _MaintenanceListView extends StatelessWidget {
+class _MaintenanceListView extends StatefulWidget {
   const _MaintenanceListView();
+
+  @override
+  State<_MaintenanceListView> createState() => _MaintenanceListViewState();
+}
+
+class _MaintenanceListViewState extends State<_MaintenanceListView> {
+  // يمنع الضغط المزدوج على "إلغاء الطلب" لنفس الطلب أثناء تنفيذه، والذي
+  // كان يعطي رسالة خطأ مربكة عند المحاولة الثانية رغم نجاح الأولى فعلياً.
+  final _cancellingIds = <String>{};
 
   Future<void> _openCreateScreen(BuildContext context) async {
     final created = await context.pushNamed<bool>(AppRoutes.createMaintenance);
@@ -45,10 +55,15 @@ class _MaintenanceListView extends StatelessWidget {
     BuildContext context,
     MaintenanceRequest request,
   ) async {
+    if (_cancellingIds.contains(request.id)) return;
+    setState(() => _cancellingIds.add(request.id));
+
     final cubit = context.read<MaintenanceListCubit>();
     final result = await cubit.cancelRequest(request.id);
 
     if (!context.mounted) return;
+    setState(() => _cancellingIds.remove(request.id));
+
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -115,6 +130,9 @@ class _MaintenanceListView extends StatelessWidget {
                           for (final request in requests) ...[
                             _RequestCard(
                               request: request,
+                              isCancelling: _cancellingIds.contains(
+                                request.id,
+                              ),
                               onCancel:
                                   request.status == 'completed'
                                       ? null
@@ -198,21 +216,15 @@ class _CategoryGrid extends StatelessWidget {
 }
 
 class _RequestCard extends StatelessWidget {
-  const _RequestCard({required this.request, this.onCancel});
+  const _RequestCard({
+    required this.request,
+    this.onCancel,
+    this.isCancelling = false,
+  });
 
   final MaintenanceRequest request;
   final VoidCallback? onCancel;
-
-  String _formatTime(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inDays >= 1) {
-      return 'منذ ${diff.inDays} ${diff.inDays == 1 ? 'يوم' : 'أيام'}';
-    }
-    if (diff.inHours >= 1) {
-      return 'منذ ${diff.inHours} ${diff.inHours == 1 ? 'ساعة' : 'ساعات'}';
-    }
-    return 'منذ قليل';
-  }
+  final bool isCancelling;
 
   @override
   Widget build(BuildContext context) {
@@ -270,9 +282,21 @@ class _RequestCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (request.imageBytes != null) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Image.memory(
+                request.imageBytes!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Text(
-            _formatTime(request.createdAt),
+            formatRelativeTime(request.createdAt),
             style: theme.textTheme.labelSmall?.copyWith(
               color: AppColors.textHint,
             ),
@@ -282,11 +306,22 @@ class _RequestCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: onCancel,
-                icon: const Icon(Icons.close, size: 16, color: AppColors.error),
-                label: const Text(
-                  'إلغاء الطلب',
-                  style: TextStyle(color: AppColors.error),
+                onPressed: isCancelling ? null : onCancel,
+                icon:
+                    isCancelling
+                        ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: AppColors.error,
+                        ),
+                label: Text(
+                  isCancelling ? 'جارٍ الإلغاء...' : 'إلغاء الطلب',
+                  style: const TextStyle(color: AppColors.error),
                 ),
               ),
             ),
