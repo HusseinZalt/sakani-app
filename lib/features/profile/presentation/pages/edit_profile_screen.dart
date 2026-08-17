@@ -181,179 +181,98 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(title: 'تعديل البيانات', onBack: () => context.pop()),
-          Expanded(
-            child:
-                user == null
-                    ? const Center(child: CircularProgressIndicator())
-                    : SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Center(
-                              child: GestureDetector(
-                                onTap: _pickAvatar,
-                                child: Column(
-                                  children: [
-                                    Stack(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 42,
-                                          backgroundColor:
-                                              AppColors.primarySubtle,
-                                          backgroundImage:
-                                              _newAvatarBytes != null
-                                                  ? MemoryImage(
-                                                    _newAvatarBytes!,
-                                                  )
-                                                  : (user.avatarUrl != null
-                                                      ? avatarImageProvider(
-                                                        user.avatarUrl!,
-                                                      )
-                                                      : null),
-                                          child:
-                                              _newAvatarBytes == null &&
-                                                      user.avatarUrl == null
-                                                  ? const Icon(
-                                                    Icons
-                                                        .person_outline_rounded,
-                                                    color:
-                                                        AppColors.primaryDark,
-                                                    size: 34,
-                                                  )
-                                                  : null,
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          child: Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primary,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: AppColors.surface,
-                                                width: 3,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(
+              title: 'تعديل البيانات',
+              onBack: () => context.pop(),
+            ),
+            Expanded(
+              child:
+                  user == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Center(
+                                child: GestureDetector(
+                                  onTap: _pickAvatar,
+                                  child: Column(
+                                    children: [
+                                      Stack(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 42,
+                                            backgroundColor:
+                                                AppColors.primarySubtle,
+                                            backgroundImage:
+                                                _newAvatarBytes != null
+                                                    ? MemoryImage(
+                                                      _newAvatarBytes!,
+                                                    )
+                                                    : (user.avatarUrl != null
+                                                        ? avatarImageProvider(
+                                                          user.avatarUrl!,
+                                                        )
+                                                        : null),
+                                            child:
+                                                _newAvatarBytes == null &&
+                                                        user.avatarUrl == null
+                                                    ? const Icon(
+                                                      Icons
+                                                          .person_outline_rounded,
+                                                      color:
+                                                          AppColors.primaryDark,
+                                                      size: 34,
+                                                    )
+                                                    : null,
+                                          ),
+                                          Positioned(
+                                            bottom: 0,
+                                            left: 0,
+                                            child: Container(
+                                              width: 28,
+                                              height: 28,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: AppColors.surface,
+                                                  width: 3,
+                                                ),
+                                              ),
+                                              child: const Icon(
+                                                Icons.camera_alt_rounded,
+                                                color: AppColors.white,
+                                                size: 14,
                                               ),
                                             ),
-                                            child: const Icon(
-                                              Icons.camera_alt_rounded,
-                                              color: AppColors.white,
-                                              size: 14,
-                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'تغيير الصورة الشخصية',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.labelSmall?.copyWith(
-                                        color: AppColors.primaryDark,
-                                        fontWeight: FontWeight.w700,
+                                        ],
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'تغيير الصورة الشخصية',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.labelSmall?.copyWith(
+                                          color: AppColors.primaryDark,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'البيانات القابلة للتعديل',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.labelLarge?.copyWith(
-                                color: AppColors.textHint,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            CustomTextField(
-                              controller: _firstNameController,
-                              label: 'الاسم الأول',
-                              prefixIcon: Icons.edit_outlined,
-                              enabled: !_isSaving,
-                              textInputAction: TextInputAction.next,
-                              validator:
-                                  (v) =>
-                                      (v == null || v.trim().isEmpty)
-                                          ? 'يرجى إدخال الاسم الأول'
-                                          : null,
-                            ),
-                            const SizedBox(height: 14),
-                            CustomTextField(
-                              controller: _lastNameController,
-                              label: 'الاسم الأخير',
-                              prefixIcon: Icons.edit_outlined,
-                              enabled: !_isSaving,
-                              textInputAction: TextInputAction.next,
-                              validator:
-                                  (v) =>
-                                      (v == null || v.trim().isEmpty)
-                                          ? 'يرجى إدخال الاسم الأخير'
-                                          : null,
-                            ),
-                            const SizedBox(height: 14),
-                            CustomTextField(
-                              controller: _phoneController,
-                              label: 'رقم الجوال',
-                              prefixIcon: Icons.phone_outlined,
-                              enabled: !_isSaving,
-                              textDirection: TextDirection.ltr,
-                              textAlign: TextAlign.right,
-                              textInputAction: TextInputAction.next,
-                              validator:
-                                  (v) =>
-                                      (v == null || v.trim().isEmpty)
-                                          ? 'يرجى إدخال رقم الجوال'
-                                          : null,
-                            ),
-                            const SizedBox(height: 14),
-                            CustomTextField(
-                              controller: _emailController,
-                              label: 'البريد الإلكتروني',
-                              prefixIcon: Icons.email_outlined,
-                              enabled: !_isSaving,
-                              textDirection: TextDirection.ltr,
-                              textAlign: TextAlign.right,
-                              textInputAction: TextInputAction.next,
-                              validator: (v) {
-                                final trimmed = v?.trim() ?? '';
-                                if (trimmed.isEmpty) {
-                                  return 'يرجى إدخال البريد الإلكتروني';
-                                }
-                                if (!trimmed.contains('@')) {
-                                  return 'صيغة البريد الإلكتروني غير صحيحة';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 14),
-                            CustomTextField(
-                              controller: _cityController,
-                              label: 'مكان الإقامة',
-                              prefixIcon: Icons.location_on_outlined,
-                              enabled: !_isSaving,
-                              textInputAction: TextInputAction.done,
-                              validator:
-                                  (v) =>
-                                      (v == null || v.trim().isEmpty)
-                                          ? 'يرجى إدخال مكان الإقامة'
-                                          : null,
-                            ),
-                            if (user.studentId != null ||
-                                user.nationalId != null) ...[
-                              const SizedBox(height: 22),
+                              const SizedBox(height: 24),
                               Text(
-                                'بيانات ثابتة (غير قابلة للتعديل)',
+                                'البيانات القابلة للتعديل',
                                 style: Theme.of(
                                   context,
                                 ).textTheme.labelLarge?.copyWith(
@@ -362,34 +281,121 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              if (user.studentId != null) ...[
-                                _LockedField(
-                                  label: 'الرقم الجامعي',
-                                  value: user.studentId!,
-                                  note: 'للتعديل تواصل مع إدارة السكن',
+                              CustomTextField(
+                                controller: _firstNameController,
+                                label: 'الاسم الأول',
+                                prefixIcon: Icons.edit_outlined,
+                                enabled: !_isSaving,
+                                textInputAction: TextInputAction.next,
+                                validator:
+                                    (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'يرجى إدخال الاسم الأول'
+                                            : null,
+                              ),
+                              const SizedBox(height: 14),
+                              CustomTextField(
+                                controller: _lastNameController,
+                                label: 'الاسم الأخير',
+                                prefixIcon: Icons.edit_outlined,
+                                enabled: !_isSaving,
+                                textInputAction: TextInputAction.next,
+                                validator:
+                                    (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'يرجى إدخال الاسم الأخير'
+                                            : null,
+                              ),
+                              const SizedBox(height: 14),
+                              CustomTextField(
+                                controller: _phoneController,
+                                label: 'رقم الجوال',
+                                prefixIcon: Icons.phone_outlined,
+                                enabled: !_isSaving,
+                                textDirection: TextDirection.ltr,
+                                textAlign: TextAlign.right,
+                                textInputAction: TextInputAction.next,
+                                validator:
+                                    (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'يرجى إدخال رقم الجوال'
+                                            : null,
+                              ),
+                              const SizedBox(height: 14),
+                              CustomTextField(
+                                controller: _emailController,
+                                label: 'البريد الإلكتروني',
+                                prefixIcon: Icons.email_outlined,
+                                enabled: !_isSaving,
+                                textDirection: TextDirection.ltr,
+                                textAlign: TextAlign.right,
+                                textInputAction: TextInputAction.next,
+                                validator: (v) {
+                                  final trimmed = v?.trim() ?? '';
+                                  if (trimmed.isEmpty) {
+                                    return 'يرجى إدخال البريد الإلكتروني';
+                                  }
+                                  if (!trimmed.contains('@')) {
+                                    return 'صيغة البريد الإلكتروني غير صحيحة';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              CustomTextField(
+                                controller: _cityController,
+                                label: 'مكان الإقامة',
+                                prefixIcon: Icons.location_on_outlined,
+                                enabled: !_isSaving,
+                                textInputAction: TextInputAction.done,
+                                validator:
+                                    (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'يرجى إدخال مكان الإقامة'
+                                            : null,
+                              ),
+                              if (user.studentId != null ||
+                                  user.nationalId != null) ...[
+                                const SizedBox(height: 22),
+                                Text(
+                                  'بيانات ثابتة (غير قابلة للتعديل)',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelLarge?.copyWith(
+                                    color: AppColors.textHint,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
+                                const SizedBox(height: 12),
+                                if (user.studentId != null) ...[
+                                  _LockedField(
+                                    label: 'الرقم الجامعي',
+                                    value: user.studentId!,
+                                    note: 'للتعديل تواصل مع إدارة السكن',
+                                  ),
+                                  if (user.nationalId != null)
+                                    const SizedBox(height: 14),
+                                ],
                                 if (user.nationalId != null)
-                                  const SizedBox(height: 14),
+                                  _LockedField(
+                                    label: 'الرقم الوطني / الإقامة',
+                                    value: user.nationalId!,
+                                  ),
                               ],
-                              if (user.nationalId != null)
-                                _LockedField(
-                                  label: 'الرقم الوطني / الإقامة',
-                                  value: user.nationalId!,
-                                ),
+                              const SizedBox(height: 28),
+                              CustomButton(
+                                label: 'حفظ التغييرات',
+                                icon: Icons.check_rounded,
+                                isLoading: _isSaving,
+                                onPressed: _save,
+                              ),
                             ],
-                            const SizedBox(height: 28),
-                            CustomButton(
-                              label: 'حفظ التغييرات',
-                              icon: Icons.check_rounded,
-                              isLoading: _isSaving,
-                              onPressed: _save,
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "200936778169",
+    "project_id": "university-notification-1",
+    "storage_bucket": "university-notification-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200936778169:android:640991e676de2b07c0ae68",
+        "android_client_info": {
+          "package_name": "com.example.student_housing"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3FGgSnfltJGPN1ZNK1TvduInZIcderTw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

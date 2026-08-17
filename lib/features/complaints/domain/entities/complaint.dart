@@ -15,6 +15,8 @@ class Complaint extends Equatable {
     required this.description,
     required this.status,
     required this.createdAt,
+    this.isAnonymous = false,
+    this.imageUrls = const [],
     this.adminReply,
   });
 
@@ -28,6 +30,10 @@ class Complaint extends Equatable {
   final String description;
   final String status;
   final DateTime createdAt;
+  final bool isAnonymous;
+  final List<String> imageUrls;
+
+  /// رد الإدارة (إن وُجد) — null إلى أن يرد أحد الإداريين على الشكوى/الاقتراح.
   final ComplaintReply? adminReply;
 
   @override
@@ -39,6 +45,8 @@ class Complaint extends Equatable {
     description,
     status,
     createdAt,
+    isAnonymous,
+    imageUrls,
     adminReply,
   ];
 }

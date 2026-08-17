@@ -53,7 +53,8 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     setState(() {
       _isLoading = false;
       _complaint = result.dataOrNull;
-      _errorMessage = result.dataOrNull == null ? result.failureOrNull!.message : null;
+      _errorMessage =
+          result.dataOrNull == null ? result.failureOrNull!.message : null;
     });
   }
 
@@ -63,24 +64,32 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(
-            title: complaint != null ? 'تفاصيل: ${complaint.title}' : 'تفاصيل',
-            onBack: () => Navigator.of(context).maybePop(),
-          ),
-          Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : complaint == null
-                    ? _ErrorView(
-                      message: _errorMessage ?? 'تعذّر تحميل الشكوى.',
-                      onRetry: _fetch,
-                    )
-                    : _ComplaintThread(complaint: complaint),
-          ),
-        ],
+      // top: false لأن GradientHeader يتولى أعلى الشاشة بنفسه؛ الشريط
+      // السفلي (أزرار/حركات نظام أندرويد) يحتاج هذا الحد الآمن هنا لأن
+      // هذه الشاشة تُدفَع فوق الجذر (rootNavigatorKey) بدون شريط تنقل
+      // سفلي يمتص المساحة تلقائياً كما بشاشات التبويبات الخمس.
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(
+              title:
+                  complaint != null ? 'تفاصيل: ${complaint.title}' : 'تفاصيل',
+              onBack: () => Navigator.of(context).maybePop(),
+            ),
+            Expanded(
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : complaint == null
+                      ? _ErrorView(
+                        message: _errorMessage ?? 'تعذّر تحميل الشكوى.',
+                        onRetry: _fetch,
+                      )
+                      : _ComplaintThread(complaint: complaint),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -164,6 +173,41 @@ class _ComplaintThread extends StatelessWidget {
                 ),
               ],
             ),
+            if (complaint.imageUrls.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(right: 48),
+                child: SizedBox(
+                  height: 72,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: complaint.imageUrls.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: Image.network(
+                          complaint.imageUrls[i],
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, _, _) => Container(
+                                width: 72,
+                                height: 72,
+                                color: AppColors.surfaceVariant,
+                                child: Icon(
+                                  Icons.broken_image_outlined,
+                                  color: AppColors.textHint,
+                                ),
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
             Padding(
               padding: const EdgeInsets.only(top: 6, right: 48),
               child: Align(

@@ -27,130 +27,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(title: 'الإعدادات', onBack: () => context.pop()),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  'المظهر',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                const _ThemeModeSelector(),
-                const SizedBox(height: 22),
-                Text(
-                  'الإشعارات',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                CustomCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        value: _housingNotifications,
-                        onChanged:
-                            (value) =>
-                                setState(() => _housingNotifications = value),
-                        title: const Text('إشعارات طلبات السكن'),
-                        subtitle: const Text('تحديثات حالة الطلب والدفع'),
-                        activeColor: AppColors.primary,
-                      ),
-                      const Divider(height: 1),
-                      SwitchListTile(
-                        value: _complaintsNotifications,
-                        onChanged:
-                            (value) => setState(
-                              () => _complaintsNotifications = value,
-                            ),
-                        title: const Text('إشعارات الشكاوى والاقتراحات'),
-                        subtitle: const Text('ردود الإدارة'),
-                        activeColor: AppColors.primary,
-                      ),
-                      const Divider(height: 1),
-                      SwitchListTile(
-                        value: _generalNotifications,
-                        onChanged:
-                            (value) =>
-                                setState(() => _generalNotifications = value),
-                        title: const Text('إشعارات عامة'),
-                        subtitle: const Text(
-                          'إعلانات وتنبيهات المدينة الجامعية',
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(title: 'الإعدادات', onBack: () => context.pop()),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Text(
+                    'المظهر',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const _ThemeModeSelector(),
+                  const SizedBox(height: 22),
+                  Text(
+                    'الإشعارات',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  CustomCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          value: _housingNotifications,
+                          onChanged:
+                              (value) =>
+                                  setState(() => _housingNotifications = value),
+                          title: const Text('إشعارات طلبات السكن'),
+                          subtitle: const Text('تحديثات حالة الطلب والدفع'),
+                          activeColor: AppColors.primary,
                         ),
-                        activeColor: AppColors.primary,
-                      ),
-                    ],
+                        const Divider(height: 1),
+                        SwitchListTile(
+                          value: _complaintsNotifications,
+                          onChanged:
+                              (value) => setState(
+                                () => _complaintsNotifications = value,
+                              ),
+                          title: const Text('إشعارات الشكاوى والاقتراحات'),
+                          subtitle: const Text('ردود الإدارة'),
+                          activeColor: AppColors.primary,
+                        ),
+                        const Divider(height: 1),
+                        SwitchListTile(
+                          value: _generalNotifications,
+                          onChanged:
+                              (value) =>
+                                  setState(() => _generalNotifications = value),
+                          title: const Text('إشعارات عامة'),
+                          subtitle: const Text(
+                            'إعلانات وتنبيهات المدينة الجامعية',
+                          ),
+                          activeColor: AppColors.primary,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'الخصوصية والأمان',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                CustomCard(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      _SettingsMenuTile(
-                        icon: Icons.lock_outline_rounded,
-                        title: 'تغيير كلمة المرور',
-                        onTap:
-                            () => context.pushNamed(AppRoutes.changePassword),
-                      ),
-                      const Divider(height: 1),
-                      _SettingsMenuTile(
-                        icon: Icons.shield_outlined,
-                        title: 'سياسة الخصوصية',
-                        onTap: () => context.pushNamed(AppRoutes.privacyPolicy),
-                      ),
-                    ],
+                  const SizedBox(height: 22),
+                  Text(
+                    'الخصوصية والأمان',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'الملف الشخصي',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                CustomCard(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      _SettingsMenuTile(
-                        icon: Icons.person_outline_rounded,
-                        title: 'عرض/تعديل البروفايل',
-                        onTap: () => context.pushNamed(AppRoutes.editProfile),
-                      ),
-                      const Divider(height: 1),
-                      _SettingsMenuTile(
-                        icon: Icons.logout,
-                        title: 'تسجيل الخروج',
-                        titleColor: AppColors.error,
-                        onTap: () {
-                          AuthRepositoryImpl().logout();
-                          context.read<UserSessionCubit>().clear();
-                          context.goNamed(AppRoutes.login);
-                        },
-                      ),
-                    ],
+                  const SizedBox(height: 10),
+                  CustomCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        _SettingsMenuTile(
+                          icon: Icons.lock_outline_rounded,
+                          title: 'تغيير كلمة المرور',
+                          onTap:
+                              () => context.pushNamed(AppRoutes.changePassword),
+                        ),
+                        const Divider(height: 1),
+                        _SettingsMenuTile(
+                          icon: Icons.shield_outlined,
+                          title: 'سياسة الخصوصية',
+                          onTap:
+                              () => context.pushNamed(AppRoutes.privacyPolicy),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 22),
+                  Text(
+                    'الملف الشخصي',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  CustomCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        _SettingsMenuTile(
+                          icon: Icons.person_outline_rounded,
+                          title: 'عرض/تعديل البروفايل',
+                          onTap: () => context.pushNamed(AppRoutes.editProfile),
+                        ),
+                        const Divider(height: 1),
+                        _SettingsMenuTile(
+                          icon: Icons.logout,
+                          title: 'تسجيل الخروج',
+                          titleColor: AppColors.error,
+                          onTap: () {
+                            AuthRepositoryImpl().logout();
+                            context.read<UserSessionCubit>().clear();
+                            context.goNamed(AppRoutes.login);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -233,9 +237,8 @@ class _ThemeModeSelector extends StatelessWidget {
                 label: option.label,
                 icon: option.icon,
                 selected: controller.mode == option.mode,
-                onTap: () => context.read<ThemeController>().setMode(
-                  option.mode,
-                ),
+                onTap:
+                    () => context.read<ThemeController>().setMode(option.mode),
               ),
             ),
         ],

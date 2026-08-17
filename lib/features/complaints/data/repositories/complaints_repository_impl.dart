@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/complaint.dart';
 import '../../domain/repositories/complaints_repository.dart';
@@ -14,6 +16,8 @@ class ComplaintsRepositoryImpl implements ComplaintsRepository {
     try {
       final complaints = await _remoteDataSource.fetchComplaints();
       return ApiResult.success(complaints);
+    } on ComplaintsException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
     } catch (_) {
       return ApiResult.failure(ApiFailure.unknown());
     }
@@ -36,12 +40,16 @@ class ComplaintsRepositoryImpl implements ComplaintsRepository {
     required String type,
     required String title,
     required String description,
+    bool isAnonymous = false,
+    List<Uint8List> images = const [],
   }) async {
     try {
       final complaint = await _remoteDataSource.submitComplaint(
         type: type,
         title: title,
         description: description,
+        isAnonymous: isAnonymous,
+        images: images,
       );
       return ApiResult.success(complaint);
     } on ComplaintsException catch (e) {

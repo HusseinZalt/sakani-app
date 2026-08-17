@@ -81,73 +81,76 @@ class _MaintenanceListViewState extends State<_MaintenanceListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          const GradientHeader(
-            title: 'طلب خدمة',
-            subtitle: 'اطلب خدمات الصيانة والدعم',
-          ),
-          Expanded(
-            child: BlocBuilder<MaintenanceListCubit, MaintenanceListState>(
-              builder: (context, state) {
-                return switch (state) {
-                  MaintenanceListInitial() || MaintenanceListLoading() =>
-                    const Center(child: CircularProgressIndicator()),
-                  MaintenanceListFailure(:final failure) => _ErrorView(
-                    message: failure.message,
-                    onRetry:
-                        () =>
-                            context
-                                .read<MaintenanceListCubit>()
-                                .fetchRequests(),
-                  ),
-                  MaintenanceListSuccess(:final requests) => RefreshIndicator(
-                    onRefresh:
-                        () =>
-                            context
-                                .read<MaintenanceListCubit>()
-                                .fetchRequests(),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                      children: [
-                        CustomButton(
-                          label: 'طلب خدمة جديدة',
-                          icon: Icons.add_rounded,
-                          onPressed: () => _openCreateScreen(context),
-                        ),
-                        const SizedBox(height: 20),
-                        const _CategoryGrid(),
-                        const SizedBox(height: 24),
-                        Text(
-                          'طلباتي السابقة',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 12),
-                        if (requests.isEmpty)
-                          const _EmptyView()
-                        else
-                          for (final request in requests) ...[
-                            _RequestCard(
-                              request: request,
-                              isCancelling: _cancellingIds.contains(
-                                request.id,
-                              ),
-                              onCancel:
-                                  request.status == 'completed'
-                                      ? null
-                                      : () => _handleCancel(context, request),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                      ],
-                    ),
-                  ),
-                };
-              },
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const GradientHeader(
+              title: 'طلب خدمة',
+              subtitle: 'اطلب خدمات الصيانة والدعم',
             ),
-          ),
-        ],
+            Expanded(
+              child: BlocBuilder<MaintenanceListCubit, MaintenanceListState>(
+                builder: (context, state) {
+                  return switch (state) {
+                    MaintenanceListInitial() || MaintenanceListLoading() =>
+                      const Center(child: CircularProgressIndicator()),
+                    MaintenanceListFailure(:final failure) => _ErrorView(
+                      message: failure.message,
+                      onRetry:
+                          () =>
+                              context
+                                  .read<MaintenanceListCubit>()
+                                  .fetchRequests(),
+                    ),
+                    MaintenanceListSuccess(:final requests) => RefreshIndicator(
+                      onRefresh:
+                          () =>
+                              context
+                                  .read<MaintenanceListCubit>()
+                                  .fetchRequests(),
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                        children: [
+                          CustomButton(
+                            label: 'طلب خدمة جديدة',
+                            icon: Icons.add_rounded,
+                            onPressed: () => _openCreateScreen(context),
+                          ),
+                          const SizedBox(height: 20),
+                          const _CategoryGrid(),
+                          const SizedBox(height: 24),
+                          Text(
+                            'طلباتي السابقة',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 12),
+                          if (requests.isEmpty)
+                            const _EmptyView()
+                          else
+                            for (final request in requests) ...[
+                              _RequestCard(
+                                request: request,
+                                isCancelling: _cancellingIds.contains(
+                                  request.id,
+                                ),
+                                onCancel:
+                                    request.status == 'completed'
+                                        ? null
+                                        : () => _handleCancel(context, request),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                        ],
+                      ),
+                    ),
+                  };
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

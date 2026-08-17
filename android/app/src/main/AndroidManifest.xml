@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- مطلوبة على أندرويد 13+ (API 33) لعرض إشعارات Firebase Cloud
+         Messaging؛ التطبيق يطلبها وقت التشغيل عبر flutter_local_notifications. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="سكني"
         android:name="${applicationName}"
@@ -32,6 +35,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- قناة الإشعارات الافتراضية التي يستخدمها أندرويد لعرض إشعارات
+             Firebase تلقائياً عندما يكون التطبيق بالخلفية أو مغلقاً (يجب أن
+             تطابق معرّف القناة المستخدم في PushNotificationService). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="sakani_default_channel" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

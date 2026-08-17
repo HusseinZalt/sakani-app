@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_result.dart';
@@ -14,6 +16,8 @@ class CreateComplaintCubit extends Cubit<CreateComplaintState> {
     required String type,
     required String title,
     required String description,
+    bool isAnonymous = false,
+    List<Uint8List> images = const [],
   }) async {
     emit(const CreateComplaintSubmitting());
 
@@ -21,6 +25,8 @@ class CreateComplaintCubit extends Cubit<CreateComplaintState> {
       type: type,
       title: title,
       description: description,
+      isAnonymous: isAnonymous,
+      images: images,
     );
 
     switch (result) {

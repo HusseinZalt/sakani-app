@@ -43,22 +43,40 @@ class MainShellScreen extends StatelessWidget {
     ),
   ];
 
+  /// فهرس تبويب "الرئيسية" ضمن [_destinations]/فروع الـ Shell — نقطة
+  /// الرجوع الافتراضية عند الضغط على زر الرجوع من أي تبويب آخر.
+  static const _homeBranchIndex = 4;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.divider)),
-        ),
-        child: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected:
-              (index) => navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
-              ),
-          destinations: _destinations,
+    final isOnHomeBranch = navigationShell.currentIndex == _homeBranchIndex;
+
+    // بدون هذا الاعتراض، ضغط زر الرجوع (نظام أندرويد) من أي تبويب غير
+    // "الرئيسية" يُغلق التطبيق بالكامل مباشرة: كل تبويب هو جذر مستقل ضمن
+    // StatefulShellRoute (IndexedStack) وليس فيه شيء يُنقض (pop) داخلياً،
+    // فيصل الضغط لنظام التشغيل الذي يعتبره خروجاً من التطبيق. نعيد توجيهه
+    // بدل ذلك للتبويب الرئيسي أولاً، ولا نسمح بالخروج الفعلي إلا منه.
+    return PopScope(
+      canPop: isOnHomeBranch,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        navigationShell.goBranch(_homeBranchIndex);
+      },
+      child: Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: AppColors.divider)),
+          ),
+          child: NavigationBar(
+            selectedIndex: navigationShell.currentIndex,
+            onDestinationSelected:
+                (index) => navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                ),
+            destinations: _destinations,
+          ),
         ),
       ),
     );

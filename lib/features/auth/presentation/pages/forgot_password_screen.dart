@@ -93,23 +93,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(
-            title: 'نسيت كلمة المرور',
-            onBack: _stage == _Stage.done ? null : () => context.pop(),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: switch (_stage) {
-                _Stage.email => _buildEmailStage(theme),
-                _Stage.resetCode => _buildResetStage(theme),
-                _Stage.done => _buildSuccessView(theme),
-              },
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(
+              title: 'نسيت كلمة المرور',
+              onBack: _stage == _Stage.done ? null : () => context.pop(),
             ),
-          ),
-        ],
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: switch (_stage) {
+                  _Stage.email => _buildEmailStage(theme),
+                  _Stage.resetCode => _buildResetStage(theme),
+                  _Stage.done => _buildSuccessView(theme),
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

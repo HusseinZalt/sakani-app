@@ -124,22 +124,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(
-            title: 'تغيير كلمة المرور',
-            onBack: () => context.pop(),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: switch (_stage) {
-                _Stage.verifyCurrent => _buildVerifyStage(),
-                _Stage.setNew => _buildNewPasswordStage(),
-              },
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(
+              title: 'تغيير كلمة المرور',
+              onBack: () => context.pop(),
             ),
-          ),
-        ],
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: switch (_stage) {
+                  _Stage.verifyCurrent => _buildVerifyStage(),
+                  _Stage.setNew => _buildNewPasswordStage(),
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+
+import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
-import '../../../../core/session/mock_current_user.dart';
 import '../models/complaint_model.dart';
 
 /// استثناء مخصص لطبقة الـ Data يحمل رسالة عربية واضحة ونوع الخطأ المناسب.
@@ -13,128 +18,176 @@ class ComplaintsException implements Exception {
   final ApiErrorType type;
 }
 
-/// مصدر بيانات الشكاوى والاقتراحات.
+/// مصدر بيانات الشكاوى والاقتراحات — يستدعي خدمة الآراء الحقيقية
+/// (ASP.NET Core على `feedbackservice001.runasp.net`، راجع `/swagger`).
 ///
-/// ==================================================================
-/// **نقطة الربط مع الباك إند:** هذا التنفيذ وهمي بالكامل حالياً (بيانات
-/// مشتركة (static) في الذاكرة + محاكاة زمن استجابة الشبكة). عند الربط
-/// الحقيقي، يكفي استبدال محتوى هذا الملف بطلبات HTTP فعلية دون أي تعديل
-/// على الـ Repository أو الـ Cubits أو الشاشات.
-/// ==================================================================
+/// **مؤكَّد بالاختبار الفعلي (2026-08-17):** هذه الخدمة تثق بنفس الـ Access
+/// Token الصادر من خدمة المصادقة. `GET /api/Feedbacks` مخصّصة للإدارة فقط
+/// (كانت تُرجع 403 لحسابات الطلاب)، فتُستخدم بدلاً منها `GET
+/// /api/Feedbacks/mine` المخصّصة للطالب، والمؤكَّد أنها تُعيد شكاواه هو فقط.
 class ComplaintsRemoteDataSource {
-  static const _networkDelay = Duration(milliseconds: 800);
-  static const _placeholderUserId = 'usr_1001';
-  static const _placeholderUserName = 'أحمد محمد';
+  ComplaintsRemoteDataSource({Dio? dio}) : _dio = dio ?? ApiClient.feedback.dio;
 
-  static String? _currentUserId;
-  static bool _seedPatched = false;
-
-  static final List<ComplaintModel> _complaints = [
-    ComplaintModel(
-      id: 'cmp_6001',
-      userId: _placeholderUserId,
-      type: 'complaint',
-      title: 'مشكلة في التكييف',
-      description: 'التكييف لا يعمل بشكل جيد في غرفتي',
-      status: 'pending',
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    ),
-    ComplaintModel(
-      id: 'cmp_6002',
-      userId: _placeholderUserId,
-      type: 'suggestion',
-      title: 'اقتراح تحسين المقصف',
-      description: 'أقترح توسيع ساعات عمل المقصف',
-      status: 'resolved',
-      createdAt: DateTime.now().subtract(const Duration(days: 14)),
-      adminReply: ComplaintReplyModel(
-        text: 'شكراً لاقتراحك القيّم. تم رفع الاقتراح للإدارة وسيتم النظر فيه.',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ),
-  ];
-
-  /// يحمّل هوية المستخدم الحقيقي الحالي (مرة واحدة)، ويستبدل بها بذور
-  /// البيانات الوهمية المُعلَّمة بالمعرّف البديل، حتى لا تظهر شكاوى/بيانات
-  /// حساب تجريبي منفصل تماماً عن المستخدم المسجَّل دخوله فعلياً.
-  Future<void> _ensureCurrentUser() async {
-    if (_currentUserId != null) return;
-
-    final resolved = await MockCurrentUser.resolve(
-      placeholderId: _placeholderUserId,
-      placeholderName: _placeholderUserName,
-    );
-    _currentUserId = resolved.id;
-
-    if (_seedPatched || resolved.id == _placeholderUserId) return;
-    _seedPatched = true;
-    for (var i = 0; i < _complaints.length; i++) {
-      if (_complaints[i].userId != _placeholderUserId) continue;
-      _complaints[i] = ComplaintModel(
-        id: _complaints[i].id,
-        userId: resolved.id,
-        type: _complaints[i].type,
-        title: _complaints[i].title,
-        description: _complaints[i].description,
-        status: _complaints[i].status,
-        createdAt: _complaints[i].createdAt,
-        adminReply: _complaints[i].adminReply,
-      );
-    }
-  }
+  final Dio _dio;
 
   Future<List<ComplaintModel>> fetchComplaints() async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
-    final mine =
-        _complaints.where((c) => c.userId == _currentUserId).toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return mine;
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/Feedbacks/mine',
+        queryParameters: {'PageNumber': 1, 'PageSize': 100},
+      );
+      final body = _asJsonMap(response.data);
+      final items = (body['items'] as List?) ?? const [];
+      final complaints =
+          items
+              .whereType<Map<String, dynamic>>()
+              .map(ComplaintModel.fromJson)
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return complaints;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
   }
 
   Future<ComplaintModel> fetchComplaintById(String id) async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
-
-    final match =
-        _complaints
-            .where((c) => c.id == id && c.userId == _currentUserId)
-            .toList();
-    if (match.isEmpty) {
-      throw const ComplaintsException(
-        'لم يتم العثور على الشكوى المطلوبة.',
-        type: ApiErrorType.notFound,
-      );
+    try {
+      final response = await _dio.get<dynamic>('/api/Feedbacks/$id');
+      return ComplaintModel.fromJson(_asJsonMap(response.data));
+    } on DioException catch (e) {
+      throw _mapDioException(e);
     }
-    return match.first;
   }
 
   Future<ComplaintModel> submitComplaint({
     required String type,
     required String title,
     required String description,
+    bool isAnonymous = false,
+    List<Uint8List> images = const [],
   }) async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
+    try {
+      final formData = FormData.fromMap({
+        'Type': ComplaintModel.typeToApi(type),
+        'Title': title,
+        'Description': description,
+        'IsAnonymous': isAnonymous,
+        if (images.isNotEmpty)
+          'Images': [
+            for (var i = 0; i < images.length; i++)
+              MultipartFile.fromBytes(images[i], filename: 'image_$i.jpg'),
+          ],
+      });
 
-    if (title.trim().isEmpty) {
-      throw const ComplaintsException('يرجى إدخال العنوان.');
+      final response = await _dio.post<dynamic>(
+        '/api/Feedbacks/with-images',
+        data: formData,
+      );
+      return ComplaintModel.fromJson(_asJsonMap(response.data));
+    } on DioException catch (e) {
+      throw _mapDioException(e);
     }
-    if (description.trim().length < 10) {
-      throw const ComplaintsException('يرجى كتابة وصف لا يقل عن 10 أحرف.');
-    }
+  }
 
-    final complaint = ComplaintModel(
-      id: 'cmp_${DateTime.now().millisecondsSinceEpoch}',
-      userId: _currentUserId!,
-      type: type,
-      title: title.trim(),
-      description: description.trim(),
-      status: 'pending',
-      createdAt: DateTime.now(),
+  /// يطبّع جسم الاستجابة إلى `Map<String, dynamic>` بغض النظر عن نوع
+  /// المحتوى الفعلي الذي أرجعه الخادم.
+  ///
+  /// بعض استجابات خدمة الآراء ترجع بنوع محتوى `text/plain` (راجع توثيق
+  /// Swagger الخاص بها) رغم أن الجسم فعلياً JSON صالح — في هذه الحالة لا
+  /// يُحوِّل Dio الاستجابة تلقائياً، فتصل هنا كسلسلة نصية (String) بدل
+  /// Map جاهزة، فنفكّها يدوياً بدل أن تفشل العملية بخطأ نوع غامض غير
+  /// مفهوم للمستخدم.
+  Map<String, dynamic> _asJsonMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String && data.isNotEmpty) {
+      final decoded = jsonDecode(data);
+      if (decoded is Map<String, dynamic>) return decoded;
+    }
+    throw const ComplaintsException(
+      'تعذّر قراءة استجابة الخادم، يرجى المحاولة مرة أخرى.',
+      type: ApiErrorType.parsing,
     );
+  }
 
-    _complaints.add(complaint);
-    return complaint;
+  /// نسخة لا تُلقي استثناءً من [_asJsonMap]، تُستخدم عند استخراج رسالة خطأ
+  /// من استجابة فاشلة أصلاً (لا داعي لإخفاء رسالة الخطأ الحقيقية بخطأ تحويل).
+  Map<String, dynamic>? _tryAsJsonMap(dynamic data) {
+    try {
+      return _asJsonMap(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  ComplaintsException _mapDioException(DioException e) {
+    final statusCode = e.response?.statusCode;
+    final responseData = _tryAsJsonMap(e.response?.data);
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return const ComplaintsException(
+          'استغرق الاتصال بالخادم وقتاً أطول من المتوقع، حاول مرة أخرى.',
+          type: ApiErrorType.timeout,
+        );
+      case DioExceptionType.connectionError:
+        return const ComplaintsException(
+          'تعذر الاتصال بالخادم، يرجى التحقق من اتصالك بالإنترنت.',
+          type: ApiErrorType.network,
+        );
+      default:
+        break;
+    }
+
+    switch (statusCode) {
+      case 400:
+        return ComplaintsException(_extractValidationMessage(responseData));
+      case 401:
+        return const ComplaintsException(
+          'تعذّر التحقق من صلاحية الدخول لهذه الخدمة، يرجى تسجيل الدخول مرة أخرى.',
+          type: ApiErrorType.unauthorized,
+        );
+      case 403:
+        // ⚠️ لوحظ فعلياً (2026-08-17) أن الخادم يرفض حسابات بدور "student"
+        // برمز 403 حتى مع توكن صالح وحديث — على الأرجح تقييد صلاحيات غير
+        // مقصود على هذه النقطة بالباك إند (تمنع الطلاب من استخدام ميزة
+        // مُصمَّمة أصلاً لهم). يجب إبلاغ فريق الباك إند بهذا تحديداً.
+        return const ComplaintsException(
+          'لا تملك صلاحية الوصول لهذه الخدمة حالياً (خطأ إعداد صلاحيات من طرف الخادم)، يرجى إبلاغ فريق الدعم.',
+          type: ApiErrorType.forbidden,
+        );
+      case 404:
+        return const ComplaintsException(
+          'لم يتم العثور على الشكوى المطلوبة.',
+          type: ApiErrorType.notFound,
+        );
+      default:
+        if (statusCode != null && statusCode >= 500) {
+          return const ComplaintsException(
+            'حدث خطأ في الخادم، يرجى المحاولة لاحقاً.',
+            type: ApiErrorType.server,
+          );
+        }
+        return const ComplaintsException('حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.');
+    }
+  }
+
+  /// يحاول استخراج رسالة مفهومة من شكل أخطاء تحقّق ASP.NET Core القياسي
+  /// (`ValidationProblemDetails`: `{errors: {field: [رسائل]}, title}`).
+  String _extractValidationMessage(Map? responseData) {
+    final errors = responseData?['errors'];
+    if (errors is Map && errors.isNotEmpty) {
+      final messages =
+          errors.values
+              .whereType<List>()
+              .expand((list) => list)
+              .whereType<String>()
+              .toList();
+      if (messages.isNotEmpty) return messages.join('\n');
+    }
+    final title = responseData?['title'];
+    if (title is String && title.isNotEmpty) return title;
+    return 'البيانات المدخلة غير صحيحة.';
   }
 }

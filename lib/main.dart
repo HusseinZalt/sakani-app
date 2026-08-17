@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'core/constants/app_colors.dart';
+import 'core/notifications/push_notification_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/session/user_session_cubit.dart';
 import 'core/theme/app_theme.dart';
@@ -13,6 +18,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final themeController = await ThemeController.load();
   runApp(MyApp(themeController: themeController));
+
+  // بدون انتظار (fire-and-forget) حتى لا يتأخر ظهور واجهة التطبيق بسبب
+  // نافذة إذن الإشعارات ونداء الشبكة لجلب رمز الجهاز. مُهيّأ فقط لأندرويد/iOS
+  // حالياً (google-services.json مضبوط للأندرويد فقط) — تفعيلها على الويب
+  // يحتاج FirebaseOptions صريحة (flutterfire configure) غير مُعدّة بعد،
+  // فتفشل بخطأ غير معالَج لو استُدعيت هناك. أي فشل آخر (جهاز بدون خدمات
+  // جوجل مثلاً) يُلتقط بصمت أيضاً حتى لا يؤثر على بقية التطبيق.
+  // TODO: عند توفر نقطة نهاية تسجيل رمز الجهاز (FCM Token) من فريق الباك
+  // إند، اربطها هنا عبر PushNotificationService.instance.onTokenRegistered.
+  if (!kIsWeb) {
+    unawaited(
+      PushNotificationService.instance.initialize().catchError((
+        Object error,
+      ) {
+        debugPrint('تعذّر تهيئة خدمة الإشعارات: $error');
+      }),
+    );
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -80,7 +103,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               builder: (context, child) {
                 return Directionality(
                   textDirection: TextDirection.rtl,
-                  child: child ?? const SizedBox.shrink(),
+                  // شاشات كثيرة تقرأ ألوانها (خلفية الـ Scaffold مثلاً) عبر
+                  // AppColors.xxx مباشرة كقيمة ثابتة داخل build()، وليس عبر
+                  // Theme.of(context) — وهي آلية لا يتتبعها نظام إعادة
+                  // البناء بفلاتر إطلاقاً. لذلك لا يُعاد بناء الشاشة تلقائياً
+                  // عند تبديل الثيم إلا إذا كانت أصلاً "تراقب" شيئاً آخر
+                  // يتغيّر (مثل Cubit)، وإلا بقيت عالقة بالألوان القديمة
+                  // إلى أن تُعاد بناؤها لسبب آخر (كالخروج من الشاشة
+                  // والعودة إليها). الحل: نفرض إعادة بناء الشجرة الموجّهة
+                  // بالكامل من الصفر عند تغيّر السطوع الفعلي عبر مفتاح
+                  // (Key) متغيّر، فتلتقط كل الشاشات القيم الجديدة فوراً.
+                  child: KeyedSubtree(
+                    key: ValueKey(AppColors.brightness),
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 );
               },
             );

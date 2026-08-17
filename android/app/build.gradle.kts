@@ -3,16 +3,21 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.example.student_housing"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // إصدار NDK 27.x متوافق مع متطلبات الإضافات الحالية (Firebase وغيرها)
+    // ومثبَّت مسبقاً على الجهاز، لتفادي تحميل نسخة جديدة بلا داعٍ.
+    ndkVersion = "27.0.11902837"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // مطلوبة من حزمة flutter_local_notifications (تستخدم واجهات جافا 8+).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -41,4 +46,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

@@ -47,62 +47,65 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(title: 'المستندات', onBack: () => context.pop()),
-          Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        Text(
-                          'مستندات الحساب',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(title: 'المستندات', onBack: () => context.pop()),
+            Expanded(
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                        padding: const EdgeInsets.all(20),
+                        children: [
+                          Text(
+                            'مستندات الحساب',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildIdDocumentTile(theme, user?.verificationStatus),
-                        const SizedBox(height: 24),
-                        Text(
-                          'مستندات طلب السكن',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                          const SizedBox(height: 10),
+                          _buildIdDocumentTile(theme, user?.verificationStatus),
+                          const SizedBox(height: 24),
+                          Text(
+                            'مستندات طلب السكن',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        if (documents.isEmpty)
-                          CustomCard(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                child: Text(
-                                  'لا توجد مستندات مرفقة بطلب سكن حتى الآن.',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
+                          const SizedBox(height: 10),
+                          if (documents.isEmpty)
+                            CustomCard(
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  child: Text(
+                                    'لا توجد مستندات مرفقة بطلب سكن حتى الآن.',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          )
-                        else
-                          for (final document in documents) ...[
-                            _DocumentTile(
-                              icon: Icons.description_outlined,
-                              title: document.name,
-                              subtitle: 'مرفق بطلب السكن',
-                              verified: true,
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                      ],
-                    ),
-          ),
-        ],
+                            )
+                          else
+                            for (final document in documents) ...[
+                              _DocumentTile(
+                                icon: Icons.description_outlined,
+                                title: document.name,
+                                subtitle: 'مرفق بطلب السكن',
+                                verified: true,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                        ],
+                      ),
+            ),
+          ],
+        ),
       ),
     );
   }

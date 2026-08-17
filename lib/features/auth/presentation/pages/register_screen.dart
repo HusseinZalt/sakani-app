@@ -340,34 +340,37 @@ class _RegisterViewState extends State<_RegisterView> {
         builder: (context, state) {
           final isLoading = state is RegisterLoading;
 
-          return Column(
-            children: [
-              GradientHeader(
-                title: _step == 0 ? 'إنشاء حساب جديد' : 'إكمال المعلومات',
-                subtitle:
-                    _step == 0
-                        ? 'أدخل بياناتك الأساسية للبدء'
-                        : 'معلومات جامعتك وهويتك',
-                onBack: _step == 1 ? _goToStep1 : null,
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _StepperLine(currentStep: _step),
-                      const SizedBox(height: 18),
-                      if (_step == 0)
-                        _buildStep1(isLoading)
-                      else
-                        _buildStep2(isLoading),
-                    ],
+          return SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                GradientHeader(
+                  title: _step == 0 ? 'إنشاء حساب جديد' : 'إكمال المعلومات',
+                  subtitle:
+                      _step == 0
+                          ? 'أدخل بياناتك الأساسية للبدء'
+                          : 'معلومات جامعتك وهويتك',
+                  onBack: _step == 1 ? _goToStep1 : null,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _StepperLine(currentStep: _step),
+                        const SizedBox(height: 18),
+                        if (_step == 0)
+                          _buildStep1(isLoading)
+                        else
+                          _buildStep2(isLoading),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

@@ -100,70 +100,77 @@ class _OtpPinFieldState extends State<OtpPinField> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(widget.length, (index) {
-        final isFilled = _controllers[index].text.isNotEmpty;
-        final boxColor =
-            widget.hasError
-                ? AppColors.error
-                : (isFilled ? AppColors.primary : AppColors.border);
+    // الأرقام تُقرأ وتُكتب دائماً من اليسار لليمين بغض النظر عن اتجاه
+    // التطبيق (RTL)؛ بدون هذا الإجبار، يعكس الـ Row ترتيب الخانات بصرياً
+    // (الخانة الأولى منطقياً تظهر في أقصى اليمين بدل اليسار)، فيدخل
+    // المستخدم الرمز بترتيب معاكس تماماً لما يقرأه.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(widget.length, (index) {
+          final isFilled = _controllers[index].text.isNotEmpty;
+          final boxColor =
+              widget.hasError
+                  ? AppColors.error
+                  : (isFilled ? AppColors.primary : AppColors.border);
 
-        return SizedBox(
-          width: 52,
-          height: 60,
-          child: KeyboardListener(
-            focusNode: FocusNode(skipTraversal: true),
-            onKeyEvent: (event) {
-              if (event is KeyDownEvent &&
-                  event.logicalKey == LogicalKeyboardKey.backspace) {
-                _handleBackspace(index);
-              }
-            },
-            child: TextField(
-              controller: _controllers[index],
-              focusNode: _focusNodes[index],
-              autofocus: widget.autofocus && index == 0,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              maxLength: widget.length,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color:
-                    isFilled && !widget.hasError
-                        ? AppColors.primaryDark
-                        : AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                counterText: '',
-                filled: true,
-                fillColor: AppColors.surface,
-                contentPadding: EdgeInsets.zero,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  borderSide: BorderSide(color: boxColor, width: 1.5),
+          return SizedBox(
+            width: 52,
+            height: 60,
+            child: KeyboardListener(
+              focusNode: FocusNode(skipTraversal: true),
+              onKeyEvent: (event) {
+                if (event is KeyDownEvent &&
+                    event.logicalKey == LogicalKeyboardKey.backspace) {
+                  _handleBackspace(index);
+                }
+              },
+              child: TextField(
+                controller: _controllers[index],
+                focusNode: _focusNodes[index],
+                autofocus: widget.autofocus && index == 0,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                maxLength: widget.length,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color:
+                      isFilled && !widget.hasError
+                          ? AppColors.primaryDark
+                          : AppColors.textPrimary,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  borderSide: BorderSide(color: boxColor, width: 1.5),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  borderSide: BorderSide(
-                    color:
-                        widget.hasError
-                            ? AppColors.error
-                            : AppColors.borderFocused,
-                    width: 1.8,
+                decoration: InputDecoration(
+                  counterText: '',
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  contentPadding: EdgeInsets.zero,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide(color: boxColor, width: 1.5),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide(color: boxColor, width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide(
+                      color:
+                          widget.hasError
+                              ? AppColors.error
+                              : AppColors.borderFocused,
+                      width: 1.8,
+                    ),
                   ),
                 ),
+                onChanged: (value) => _handleChanged(index, value),
               ),
-              onChanged: (value) => _handleChanged(index, value),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }

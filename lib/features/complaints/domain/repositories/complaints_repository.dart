@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_result.dart';
 import '../entities/complaint.dart';
 
@@ -12,10 +14,12 @@ abstract class ComplaintsRepository {
   /// المرور بشاشة القائمة أولاً (مثال: رابط مباشر أو إشعار).
   Future<ApiResult<Complaint>> fetchComplaintById(String id);
 
-  /// تقديم شكوى أو اقتراح جديد.
+  /// تقديم شكوى أو اقتراح جديد، مع إمكانية إرفاق صور وتقديمها بشكل مجهول.
   Future<ApiResult<Complaint>> submitComplaint({
     required String type,
     required String title,
     required String description,
+    bool isAnonymous = false,
+    List<Uint8List> images = const [],
   });
 }

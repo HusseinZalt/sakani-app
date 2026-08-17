@@ -46,89 +46,98 @@ class _ComplaintsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          const GradientHeader(
-            title: 'الشكاوى والاقتراحات',
-            subtitle: 'أرسل شكواك أو اقتراحك',
-          ),
-          Expanded(
-            child: BlocBuilder<ComplaintsListCubit, ComplaintsListState>(
-              builder: (context, state) {
-                return switch (state) {
-                  ComplaintsListInitial() || ComplaintsListLoading() =>
-                    const Center(child: CircularProgressIndicator()),
-                  ComplaintsListFailure(:final failure) => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(failure.message, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          OutlinedButton(
-                            onPressed:
-                                () =>
-                                    context
-                                        .read<ComplaintsListCubit>()
-                                        .fetchComplaints(),
-                            child: const Text('إعادة المحاولة'),
-                          ),
-                        ],
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const GradientHeader(
+              title: 'الشكاوى والاقتراحات',
+              subtitle: 'أرسل شكواك أو اقتراحك',
+            ),
+            Expanded(
+              child: BlocBuilder<ComplaintsListCubit, ComplaintsListState>(
+                builder: (context, state) {
+                  return switch (state) {
+                    ComplaintsListInitial() || ComplaintsListLoading() =>
+                      const Center(child: CircularProgressIndicator()),
+                    ComplaintsListFailure(:final failure) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: AppColors.error,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(failure.message, textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            OutlinedButton(
+                              onPressed:
+                                  () =>
+                                      context
+                                          .read<ComplaintsListCubit>()
+                                          .fetchComplaints(),
+                              child: const Text('إعادة المحاولة'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  ComplaintsListSuccess(:final complaints) => RefreshIndicator(
-                    onRefresh:
-                        () =>
-                            context
-                                .read<ComplaintsListCubit>()
-                                .fetchComplaints(),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                      children: [
-                        CustomButton(
-                          label: 'شكوى أو اقتراح جديد',
-                          icon: Icons.outlined_flag_rounded,
-                          onPressed: () => _openCreateScreen(context),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'السابقة',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 12),
-                        if (complaints.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
-                              child: Text(
-                                'لا توجد شكاوى أو اقتراحات حتى الآن',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.textSecondary),
-                              ),
+                    ComplaintsListSuccess(:final complaints) =>
+                      RefreshIndicator(
+                        onRefresh:
+                            () =>
+                                context
+                                    .read<ComplaintsListCubit>()
+                                    .fetchComplaints(),
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                          children: [
+                            CustomButton(
+                              label: 'شكوى أو اقتراح جديد',
+                              icon: Icons.outlined_flag_rounded,
+                              onPressed: () => _openCreateScreen(context),
                             ),
-                          )
-                        else
-                          for (final complaint in complaints) ...[
-                            _ComplaintCard(complaint: complaint),
+                            const SizedBox(height: 24),
+                            Text(
+                              'السابقة',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
                             const SizedBox(height: 12),
+                            if (complaints.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 24,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'لا توجد شكاوى أو اقتراحات حتى الآن',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              for (final complaint in complaints) ...[
+                                _ComplaintCard(complaint: complaint),
+                                const SizedBox(height: 12),
+                              ],
                           ],
-                      ],
-                    ),
-                  ),
-                };
-              },
+                        ),
+                      ),
+                  };
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

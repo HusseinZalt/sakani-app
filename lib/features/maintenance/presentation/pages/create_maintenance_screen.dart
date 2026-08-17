@@ -110,95 +110,100 @@ class _CreateMaintenanceViewState extends State<_CreateMaintenanceView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(
-            title: 'طلب خدمة جديدة',
-            subtitle: 'اختر نوع الخدمة واكتب التفاصيل',
-            onBack: () => context.pop(),
-          ),
-          Expanded(
-            child: BlocConsumer<CreateMaintenanceCubit, CreateMaintenanceState>(
-              listener: (context, state) {
-                switch (state.status) {
-                  case CreateMaintenanceStatus.success:
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        const SnackBar(
-                          content: Text('تم إرسال طلب الخدمة بنجاح.'),
-                        ),
-                      );
-                    context.pop(true);
-                  case CreateMaintenanceStatus.failure:
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            state.errorMessage ?? 'حدث خطأ غير متوقع',
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(
+              title: 'طلب خدمة جديدة',
+              subtitle: 'اختر نوع الخدمة واكتب التفاصيل',
+              onBack: () => context.pop(),
+            ),
+            Expanded(
+              child:
+                  BlocConsumer<CreateMaintenanceCubit, CreateMaintenanceState>(
+                    listener: (context, state) {
+                      switch (state.status) {
+                        case CreateMaintenanceStatus.success:
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text('تم إرسال طلب الخدمة بنجاح.'),
+                              ),
+                            );
+                          context.pop(true);
+                        case CreateMaintenanceStatus.failure:
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  state.errorMessage ?? 'حدث خطأ غير متوقع',
+                                ),
+                              ),
+                            );
+                        case CreateMaintenanceStatus.idle:
+                        case CreateMaintenanceStatus.submitting:
+                          break;
+                      }
+                    },
+                    builder: (context, state) {
+                      final isSubmitting =
+                          state.status == CreateMaintenanceStatus.submitting;
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'نوع الخدمة',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildCategoryGrid(isSubmitting),
+                              const SizedBox(height: 20),
+                              CustomTextField(
+                                controller: _descriptionController,
+                                label: 'وصف المشكلة',
+                                hint: 'اشرح المشكلة بالتفصيل...',
+                                enabled: !isSubmitting,
+                                maxLines: 6,
+                                minLines: 4,
+                                validator:
+                                    (value) =>
+                                        (value == null ||
+                                                value.trim().length < 10)
+                                            ? 'يرجى كتابة وصف لا يقل عن 10 أحرف'
+                                            : null,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'إرفاق صورة (اختياري)',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildImagePicker(context, state, isSubmitting),
+                              const SizedBox(height: 28),
+                              CustomButton(
+                                label: 'إرسال الطلب',
+                                icon: Icons.build_outlined,
+                                isLoading: isSubmitting,
+                                onPressed: () => _submit(context),
+                              ),
+                            ],
                           ),
                         ),
                       );
-                  case CreateMaintenanceStatus.idle:
-                  case CreateMaintenanceStatus.submitting:
-                    break;
-                }
-              },
-              builder: (context, state) {
-                final isSubmitting =
-                    state.status == CreateMaintenanceStatus.submitting;
-
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'نوع الخدمة',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildCategoryGrid(isSubmitting),
-                        const SizedBox(height: 20),
-                        CustomTextField(
-                          controller: _descriptionController,
-                          label: 'وصف المشكلة',
-                          hint: 'اشرح المشكلة بالتفصيل...',
-                          enabled: !isSubmitting,
-                          maxLines: 6,
-                          minLines: 4,
-                          validator:
-                              (value) =>
-                                  (value == null || value.trim().length < 10)
-                                      ? 'يرجى كتابة وصف لا يقل عن 10 أحرف'
-                                      : null,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'إرفاق صورة (اختياري)',
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildImagePicker(context, state, isSubmitting),
-                        const SizedBox(height: 28),
-                        CustomButton(
-                          label: 'إرسال الطلب',
-                          icon: Icons.build_outlined,
-                          isLoading: isSubmitting,
-                          onPressed: () => _submit(context),
-                        ),
-                      ],
-                    ),
+                    },
                   ),
-                );
-              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

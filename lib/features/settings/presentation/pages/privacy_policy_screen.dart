@@ -38,49 +38,55 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          GradientHeader(title: 'سياسة الخصوصية', onBack: () => context.pop()),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  'آخر تحديث: 2026',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppColors.textHint,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                for (final section in _sections) ...[
-                  CustomCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          section.$1,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          section.$2,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.8,
-                          ),
-                        ),
-                      ],
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            GradientHeader(
+              title: 'سياسة الخصوصية',
+              onBack: () => context.pop(),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Text(
+                    'آخر تحديث: 2026',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: AppColors.textHint,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
+                  for (final section in _sections) ...[
+                    CustomCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            section.$1,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            section.$2,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

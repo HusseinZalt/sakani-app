@@ -7,9 +7,11 @@ class ComplaintsLabels {
     'suggestion': 'اقتراح',
   };
 
+  // 'resolved' تعني الآن رداً فعلياً من الإدارة (adminReply من الـ API
+  // الحقيقي)، وليست مجرد علامة "تمت المراجعة" كما كانت سابقاً.
   static const Map<String, String> statuses = {
     'pending': 'قيد المعالجة',
-    'resolved': 'تم الحل',
+    'resolved': 'تم الرد',
   };
 
   static String typeLabel(String key) => types[key] ?? key;
