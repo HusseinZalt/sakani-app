@@ -179,7 +179,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           const SizedBox(height: 24),
           CustomButton(
             label: 'متابعة',
-            icon: Icons.arrow_forward_rounded,
+            // اتجاه "متابعة" بالعربي (RTL) بصرياً نحو اليسار — arrow_back
+            // يرسم سهماً لليسار فعلياً رغم اسمه.
+            icon: Icons.arrow_back_rounded,
             isLoading: _isSubmitting,
             onPressed: _verifyCurrentPassword,
           ),

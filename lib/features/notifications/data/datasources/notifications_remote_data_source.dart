@@ -1,133 +1,149 @@
-import '../../../../core/session/mock_current_user.dart';
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+
+import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_result.dart';
 import '../models/app_notification_model.dart';
 
-/// مصدر بيانات الإشعارات.
+/// استثناء مخصص لطبقة الـ Data يحمل رسالة عربية واضحة ونوع الخطأ المناسب.
+class NotificationsException implements Exception {
+  const NotificationsException(
+    this.message, {
+    this.type = ApiErrorType.badRequest,
+  });
+
+  final String message;
+  final ApiErrorType type;
+}
+
+/// مصدر بيانات الإشعارات — يستدعي خدمة الإشعارات الحقيقية (ASP.NET Core
+/// على `notificationservice001.runasp.net`، راجع `/swagger`).
 ///
-/// ==================================================================
-/// **نقطة الربط مع الباك إند:** هذا التنفيذ وهمي بالكامل حالياً (بيانات
-/// مشتركة (static) في الذاكرة + محاكاة زمن استجابة الشبكة). عند الربط
-/// الحقيقي، يكفي استبدال محتوى هذا الملف بطلبات HTTP فعلية (مثال:
-/// `GET /api/notifications`, `POST /api/notifications/:id/read`) دون أي
-/// تعديل على الـ Repository أو الـ Cubit أو الشاشة.
-/// ==================================================================
+/// **مؤكَّد بالاختبار الفعلي (2026-08-18):** `GET /api/Notifications` (بدون
+/// `/mine`) مقصورة على الإدارة (403 لحساب طالب)، تماماً كما كان الحال مع
+/// خدمة الآراء — لذلك تُستخدم `GET /api/Notifications/mine` هنا حصراً.
 class NotificationsRemoteDataSource {
-  static const _networkDelay = Duration(milliseconds: 600);
-  static const _placeholderUserId = 'usr_1001';
-  static const _placeholderUserName = 'أحمد محمد';
+  NotificationsRemoteDataSource({Dio? dio})
+    : _dio = dio ?? ApiClient.notifications.dio;
 
-  static String? _currentUserId;
-  static bool _seedPatched = false;
+  final Dio _dio;
 
-  static final List<AppNotificationModel> _notifications = _buildInitial();
-
-  static List<AppNotificationModel> _buildInitial() {
-    final now = DateTime.now();
-    return [
-      AppNotificationModel(
-        id: 'ntf_1',
-        userId: _placeholderUserId,
-        title: 'تم قبول طلب السكن الخاص بك',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        timeLabel: 'منذ ساعتين',
-        colorKey: 'success',
-        isUnread: true,
-        type: 'housing',
-      ),
-      AppNotificationModel(
-        id: 'ntf_2',
-        userId: _placeholderUserId,
-        title: 'رد الإدارة على اقتراحك',
-        createdAt: now.subtract(const Duration(hours: 4)),
-        timeLabel: 'منذ 4 ساعات',
-        colorKey: 'accent',
-        isUnread: true,
-        type: 'complaint',
-        relatedId: 'cmp_6002',
-      ),
-      AppNotificationModel(
-        id: 'ntf_3',
-        userId: _placeholderUserId,
-        title: 'انضممت إلى غروب الوحدة أ',
-        createdAt: now.subtract(const Duration(days: 1, hours: 3)),
-        timeLabel: 'أمس، 6:40 م',
-        colorKey: 'info',
-        isUnread: false,
-        type: 'group',
-      ),
-      AppNotificationModel(
-        id: 'ntf_4',
-        userId: _placeholderUserId,
-        title: 'تحديث حالة طلب الخدمة',
-        createdAt: now.subtract(const Duration(days: 1, hours: 7)),
-        timeLabel: 'أمس، 2:15 م',
-        colorKey: 'warning',
-        isUnread: false,
-        type: 'maintenance',
-        relatedId: 'mnt_5001',
-      ),
-      AppNotificationModel(
-        id: 'ntf_5',
-        userId: _placeholderUserId,
-        title: 'تم تحديث بيانات حسابك',
-        createdAt: now.subtract(const Duration(days: 6)),
-        timeLabel: 'منذ 6 أيام',
-        colorKey: 'neutral',
-        isUnread: false,
-        type: 'profile',
-      ),
-    ];
-  }
-
-  Future<void> _ensureCurrentUser() async {
-    if (_currentUserId != null) return;
-
-    final resolved = await MockCurrentUser.resolve(
-      placeholderId: _placeholderUserId,
-      placeholderName: _placeholderUserName,
-    );
-    _currentUserId = resolved.id;
-
-    if (_seedPatched || resolved.id == _placeholderUserId) return;
-    _seedPatched = true;
-    for (var i = 0; i < _notifications.length; i++) {
-      if (_notifications[i].userId != _placeholderUserId) continue;
-      _notifications[i] = AppNotificationModel(
-        id: _notifications[i].id,
-        userId: resolved.id,
-        title: _notifications[i].title,
-        createdAt: _notifications[i].createdAt,
-        timeLabel: _notifications[i].timeLabel,
-        colorKey: _notifications[i].colorKey,
-        isUnread: _notifications[i].isUnread,
-        type: _notifications[i].type,
-        relatedId: _notifications[i].relatedId,
+  Future<List<AppNotificationModel>> fetchNotifications() async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/Notifications/mine',
+        queryParameters: {'PageNumber': 1, 'PageSize': 100},
       );
+      final body = _asJsonMap(response.data);
+      final items = (body['items'] as List?) ?? const [];
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(AppNotificationModel.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw _mapDioException(e);
     }
   }
 
-  Future<List<AppNotificationModel>> fetchNotifications() async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
-    return _notifications.where((n) => n.userId == _currentUserId).toList();
+  Future<void> markAsRead(String id) async {
+    try {
+      // لازم جسم صريح (ولو فارغ) — بدونه يرفض الخادم الطلب بـ 411 Length
+      // Required (مؤكَّد بالاختبار الفعلي)، لأن هذه نقطة POST بلا حمولة
+      // منطقية لكن الخادم لا يزال يتوقّع ترويسة Content-Length صريحة.
+      await _dio.post<dynamic>('/api/Notifications/$id/read', data: {});
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
   }
 
-  Future<void> markAsRead(String id) async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
-    final index = _notifications.indexWhere(
-      (n) => n.id == id && n.userId == _currentUserId,
+  /// يسجّل رمز الجهاز (FCM Token) الحالي لدى خدمة الإشعارات، حتى تعرف لأي
+  /// جهاز ترسل الإشعارات الفورية لهذا المستخدم.
+  Future<void> registerDeviceToken(String fcmToken) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/device-tokens',
+        data: {'fcmToken': fcmToken, 'platform': 'android'},
+      );
+    } on DioException catch (_) {
+      // تسجيل رمز الجهاز أفضل الجهد — فشله لا يجب أن يعطّل تسجيل
+      // الدخول/التطبيق (قد لا تتوفر خدمة الإشعارات مؤقتاً مثلاً).
+    }
+  }
+
+  /// يلغي تسجيل رمز الجهاز الحالي (عند تسجيل الخروج)، حتى لا يستمر الخادم
+  /// بمحاولة إرسال إشعارات لجهاز خرج صاحبه من حسابه.
+  Future<void> unregisterDeviceToken(String fcmToken) async {
+    try {
+      await _dio.delete<dynamic>(
+        '/api/device-tokens',
+        queryParameters: {'fcmToken': fcmToken},
+      );
+    } on DioException catch (_) {
+      // أفضل الجهد أيضاً — لا يجب أن يمنع تسجيل الخروج المحلي.
+    }
+  }
+
+  /// يطبّع جسم الاستجابة إلى `Map<String, dynamic>` بغض النظر عن نوع
+  /// المحتوى الفعلي الذي أرجعه الخادم (راجع نفس المنطق في خدمة الآراء).
+  Map<String, dynamic> _asJsonMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String && data.isNotEmpty) {
+      final decoded = jsonDecode(data);
+      if (decoded is Map<String, dynamic>) return decoded;
+    }
+    throw const NotificationsException(
+      'تعذّر قراءة استجابة الخادم، يرجى المحاولة مرة أخرى.',
+      type: ApiErrorType.parsing,
     );
-    if (index == -1) return;
-    _notifications[index] = AppNotificationModel(
-      id: _notifications[index].id,
-      userId: _notifications[index].userId,
-      title: _notifications[index].title,
-      createdAt: _notifications[index].createdAt,
-      timeLabel: _notifications[index].timeLabel,
-      colorKey: _notifications[index].colorKey,
-      isUnread: false,
-      type: _notifications[index].type,
-      relatedId: _notifications[index].relatedId,
-    );
+  }
+
+  NotificationsException _mapDioException(DioException e) {
+    final statusCode = e.response?.statusCode;
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return const NotificationsException(
+          'استغرق الاتصال بالخادم وقتاً أطول من المتوقع، حاول مرة أخرى.',
+          type: ApiErrorType.timeout,
+        );
+      case DioExceptionType.connectionError:
+        return const NotificationsException(
+          'تعذر الاتصال بالخادم، يرجى التحقق من اتصالك بالإنترنت.',
+          type: ApiErrorType.network,
+        );
+      default:
+        break;
+    }
+
+    switch (statusCode) {
+      case 401:
+        return const NotificationsException(
+          'تعذّر التحقق من صلاحية الدخول لهذه الخدمة، يرجى تسجيل الدخول مرة أخرى.',
+          type: ApiErrorType.unauthorized,
+        );
+      case 403:
+        return const NotificationsException(
+          'لا تملك صلاحية الوصول لهذه الخدمة حالياً.',
+          type: ApiErrorType.forbidden,
+        );
+      case 404:
+        return const NotificationsException(
+          'لم يتم العثور على الإشعار المطلوب.',
+          type: ApiErrorType.notFound,
+        );
+      default:
+        if (statusCode != null && statusCode >= 500) {
+          return const NotificationsException(
+            'حدث خطأ في الخادم، يرجى المحاولة لاحقاً.',
+            type: ApiErrorType.server,
+          );
+        }
+        return const NotificationsException(
+          'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.',
+        );
+    }
   }
 }

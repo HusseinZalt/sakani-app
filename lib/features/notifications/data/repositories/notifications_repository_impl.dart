@@ -15,6 +15,8 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
       final notifications = await _remoteDataSource.fetchNotifications();
       notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return ApiResult.success(notifications);
+    } on NotificationsException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
     } catch (_) {
       return ApiResult.failure(ApiFailure.unknown());
     }
@@ -25,6 +27,8 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     try {
       await _remoteDataSource.markAsRead(id);
       return ApiResult.success(null);
+    } on NotificationsException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
     } catch (_) {
       return ApiResult.failure(ApiFailure.unknown());
     }

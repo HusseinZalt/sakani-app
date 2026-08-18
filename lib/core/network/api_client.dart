@@ -95,11 +95,16 @@ class ApiClient {
   /// خدمة الآراء والشكاوى/الاقتراحات (ASP.NET Core).
   static const String feedbackBaseUrl = 'http://feedbackservice001.runasp.net';
 
+  /// خدمة الإشعارات (ASP.NET Core) — صندوق الوارد الشخصي وتسجيل رمز الجهاز.
+  static const String notificationsBaseUrl =
+      'http://notificationservice001.runasp.net';
+
   /// للتوافق مع الاستخدام الحالي في طبقة المصادقة — نفس [auth].
   static final ApiClient instance = ApiClient._(authBaseUrl);
 
   static final ApiClient auth = instance;
   static final ApiClient feedback = ApiClient._(feedbackBaseUrl);
+  static final ApiClient notifications = ApiClient._(notificationsBaseUrl);
 
   final String baseUrl;
 

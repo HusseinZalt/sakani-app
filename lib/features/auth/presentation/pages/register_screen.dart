@@ -485,7 +485,9 @@ class _RegisterViewState extends State<_RegisterView> {
           const SizedBox(height: 22),
           CustomButton(
             label: 'التالي',
-            icon: Icons.arrow_forward_rounded,
+            // اتجاه "التالي" بالعربي (RTL) بصرياً نحو اليسار، عكس اللغة
+            // الإنجليزية — arrow_back يرسم سهماً لليسار فعلياً.
+            icon: Icons.arrow_back_rounded,
             onPressed: _goToStep2,
           ),
           const SizedBox(height: 16),

@@ -13,6 +13,7 @@ import 'core/routing/app_router.dart';
 import 'core/session/user_session_cubit.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/notifications/data/datasources/notifications_remote_data_source.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,9 +26,16 @@ void main() async {
   // يحتاج FirebaseOptions صريحة (flutterfire configure) غير مُعدّة بعد،
   // فتفشل بخطأ غير معالَج لو استُدعيت هناك. أي فشل آخر (جهاز بدون خدمات
   // جوجل مثلاً) يُلتقط بصمت أيضاً حتى لا يؤثر على بقية التطبيق.
-  // TODO: عند توفر نقطة نهاية تسجيل رمز الجهاز (FCM Token) من فريق الباك
-  // إند، اربطها هنا عبر PushNotificationService.instance.onTokenRegistered.
+  //
+  // رمز الجهاز (FCM Token) يُرسَل أيضاً ضمن نداءَي تسجيل الدخول والتسجيل
+  // أنفسهما (auth_remote_data_source.dart)، لكن onTokenRegistered هنا
+  // يغطّي الحالة الأخرى: تغيّر الرمز (نادر) بينما المستخدم لا يزال مسجَّل
+  // الدخول من جلسة سابقة دون إعادة تسجيل دخول — عبر نقطة خدمة الإشعارات
+  // المخصّصة لهذا الغرض تحديداً (POST /api/device-tokens).
   if (!kIsWeb) {
+    PushNotificationService.instance.onTokenRegistered = (token) {
+      NotificationsRemoteDataSource().registerDeviceToken(token);
+    };
     unawaited(
       PushNotificationService.instance.initialize().catchError((
         Object error,

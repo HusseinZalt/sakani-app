@@ -12,22 +12,21 @@ import 'package:equatable/equatable.dart';
 class AppNotification extends Equatable {
   const AppNotification({
     required this.id,
-    required this.userId,
     required this.title,
     required this.createdAt,
     required this.timeLabel,
     required this.colorKey,
     required this.isUnread,
+    this.body,
     this.type,
     this.relatedId,
   });
 
   final String id;
-
-  /// معرّف صاحب الإشعار، لضمان عدم ظهور إشعارات مستخدم آخر عند تبديل
-  /// الحساب على نفس الجهاز.
-  final String userId;
   final String title;
+
+  /// نص تفصيلي اختياري (لا تُعيده كل الإشعارات).
+  final String? body;
   final DateTime createdAt;
 
   /// نص الوقت الجاهز للعرض (مثال: "منذ ساعتين"، "أمس، 6:40 م").
@@ -41,8 +40,8 @@ class AppNotification extends Equatable {
   AppNotification copyWith({bool? isUnread}) {
     return AppNotification(
       id: id,
-      userId: userId,
       title: title,
+      body: body,
       createdAt: createdAt,
       timeLabel: timeLabel,
       colorKey: colorKey,
@@ -55,8 +54,8 @@ class AppNotification extends Equatable {
   @override
   List<Object?> get props => [
     id,
-    userId,
     title,
+    body,
     createdAt,
     timeLabel,
     colorKey,

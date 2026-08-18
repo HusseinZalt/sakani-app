@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
+import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/utils/avatar_image.dart';
 import '../../../../core/utils/relative_time.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
@@ -132,6 +135,10 @@ class _ComplaintThread extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // صورتك الحقيقية بمكان أيقونة "مجهول" العامة — هاي شكواك أنت دائماً
+    // بغض النظر عن خيار "تقديم بشكل مجهول" (ذاك يخفي هويتك عن الإدارة
+    // فقط، وليس عن شاشتك أنت وأنت تستعرض شكاواك الخاصة).
+    final avatarUrl = context.watch<UserSessionCubit>().state?.avatarUrl;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -146,11 +153,18 @@ class _ComplaintThread extends StatelessWidget {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: AppColors.surfaceVariant,
-                  child: Icon(
-                    Icons.person_outline_rounded,
-                    color: AppColors.textSecondary,
-                    size: 18,
-                  ),
+                  backgroundImage:
+                      avatarUrl != null
+                          ? avatarImageProvider(avatarUrl)
+                          : null,
+                  child:
+                      avatarUrl == null
+                          ? Icon(
+                            Icons.person_outline_rounded,
+                            color: AppColors.textSecondary,
+                            size: 18,
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -224,7 +238,12 @@ class _ComplaintThread extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                textDirection: TextDirection.rtl,
+                // عكس اتجاه الصف عمداً (خلافاً للصف المطابق لرسالة الطالب
+                // أعلاه) حتى تنتقل الأيقونة والفقاعة لليسار، فيتوافق مع
+                // موضع الطابع الزمني أسفله (left/centerLeft) ويتميّز رد
+                // الإدارة بصرياً عن رسالة الطالب (يمين) بنفس أسلوب فقاعات
+                // المحادثة المعتاد.
+                textDirection: TextDirection.ltr,
                 children: [
                   CircleAvatar(
                     radius: 18,

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/session/session_storage.dart';
 import '../../domain/entities/register_data.dart';
 import '../models/auth_user_model.dart';
@@ -27,9 +28,17 @@ class AuthRemoteDataSource {
     required String password,
   }) async {
     try {
+      // اختياري بعقد الـ API — يُرسَل فقط إن كان رمز الجهاز (FCM) متوفراً
+      // بالفعل وقت تسجيل الدخول (عادة يكون جاهزاً، لأن تهيئة خدمة
+      // الإشعارات تبدأ فور إقلاع التطبيق قبل وصول المستخدم لهذه الشاشة).
+      final fcmToken = PushNotificationService.instance.fcmToken;
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/auth/login',
-        data: {'email': email.trim(), 'password': password},
+        data: {
+          'email': email.trim(),
+          'password': password,
+          if (fcmToken != null) 'fcmToken': fcmToken,
+        },
       );
 
       final data = response.data!['data'] as Map<String, dynamic>;
@@ -45,6 +54,7 @@ class AuthRemoteDataSource {
 
   Future<void> register(RegisterData data) async {
     try {
+      final fcmToken = PushNotificationService.instance.fcmToken;
       final formData = FormData.fromMap({
         'firstName': data.firstName,
         'secondName': data.secondName,
@@ -61,6 +71,7 @@ class AuthRemoteDataSource {
           'nationality': data.nationality,
         if (data.residence != null && data.residence!.isNotEmpty)
           'residence': data.residence,
+        if (fcmToken != null) 'fcmToken': fcmToken,
         'personalPhoto': MultipartFile.fromBytes(
           data.personalPhoto,
           filename: 'personal_photo.jpg',
