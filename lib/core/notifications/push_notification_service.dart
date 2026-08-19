@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../routing/app_router.dart';
+import 'notification_preferences.dart';
 
 /// معالج الإشعارات الواردة والتطبيق مغلق تماماً أو بالخلفية — يجب أن يكون
 /// دالة top-level (وليس تابعاً لصنف) حسب متطلبات حزمة firebase_messaging،
@@ -111,9 +112,18 @@ class PushNotificationService {
         ?.createNotificationChannel(_defaultChannel);
   }
 
-  void _showForegroundNotification(RemoteMessage message) {
+  /// ⚠️ يمنع فقط عرض الإشعار المحلي عندما يكون التطبيق مفتوحاً (foreground).
+  /// إشعارات النظام يوم يكون التطبيق بالخلفية أو مغلقاً تماماً يعرضها
+  /// أندرويد تلقائياً من حمولة FCM نفسها قبل ما يشتغل أي كود Dart هون —
+  /// كتمها فعلياً بهاي الحالة يحتاج تعاون من الباك إند (يتحقق من تفضيلات
+  /// الجهاز المسجَّلة قبل الإرسال، أو يبعت حمولة بيانات فقط بدون `notification`).
+  Future<void> _showForegroundNotification(RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
+
+    final type = message.data['type'] as String?;
+    final enabled = await NotificationPreferences.isEnabledForType(type);
+    if (!enabled) return;
 
     _localNotifications.show(
       notification.hashCode,

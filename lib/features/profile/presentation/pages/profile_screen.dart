@@ -7,6 +7,7 @@ import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/utils/avatar_image.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../auth/data/repositories/auth_repository_impl.dart';
@@ -142,7 +143,16 @@ class ProfileScreen extends StatelessWidget {
                                 icon: Icons.logout,
                                 title: 'تسجيل الخروج',
                                 titleColor: AppColors.error,
-                                onTap: () {
+                                onTap: () async {
+                                  final confirmed = await confirmAction(
+                                    context,
+                                    title: 'تسجيل الخروج',
+                                    message:
+                                        'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+                                    confirmLabel: 'تسجيل الخروج',
+                                  );
+                                  if (!confirmed || !context.mounted) return;
+
                                   final fcmToken =
                                       PushNotificationService.instance.fcmToken;
                                   if (fcmToken != null) {
@@ -151,6 +161,7 @@ class ProfileScreen extends StatelessWidget {
                                   }
                                   AuthRepositoryImpl().logout();
                                   context.read<UserSessionCubit>().clear();
+                                  if (!context.mounted) return;
                                   context.goNamed(AppRoutes.login);
                                 },
                               ),

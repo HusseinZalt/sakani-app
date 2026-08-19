@@ -7,6 +7,7 @@ import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/session_storage.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/widgets/app_logo.dart';
+import '../../../auth/presentation/pages/otp_verification_screen.dart';
 
 /// شاشة البداية (Splash) التي تظهر عند تشغيل التطبيق أثناء التحقق من
 /// وجود جلسة محفوظة محلياً (عبر [SessionStorage])، قبل التوجيه التلقائي
@@ -47,7 +48,10 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (pendingIdentifier != null && pendingIdentifier.isNotEmpty) {
-      context.goNamed(AppRoutes.otp, extra: pendingIdentifier);
+      context.goNamed(
+        AppRoutes.otp,
+        extra: OtpRouteArgs(identifier: pendingIdentifier),
+      );
     } else {
       context.goNamed(AppRoutes.login);
     }

@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/notifications/notification_preferences.dart';
 import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../auth/data/repositories/auth_repository_impl.dart';
@@ -24,6 +26,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _housingNotifications = true;
   bool _complaintsNotifications = true;
   bool _generalNotifications = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final housing = await NotificationPreferences.getHousingEnabled();
+    final complaints = await NotificationPreferences.getComplaintsEnabled();
+    final general = await NotificationPreferences.getGeneralEnabled();
+    if (!mounted) return;
+    setState(() {
+      _housingNotifications = housing;
+      _complaintsNotifications = complaints;
+      _generalNotifications = general;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +80,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         SwitchListTile(
                           value: _housingNotifications,
-                          onChanged:
-                              (value) =>
-                                  setState(() => _housingNotifications = value),
+                          onChanged: (value) {
+                            setState(() => _housingNotifications = value);
+                            NotificationPreferences.setHousingEnabled(value);
+                          },
                           title: const Text('إشعارات طلبات السكن'),
                           subtitle: const Text('تحديثات حالة الطلب والدفع'),
                           activeColor: AppColors.primary,
@@ -70,10 +91,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const Divider(height: 1),
                         SwitchListTile(
                           value: _complaintsNotifications,
-                          onChanged:
-                              (value) => setState(
-                                () => _complaintsNotifications = value,
-                              ),
+                          onChanged: (value) {
+                            setState(() => _complaintsNotifications = value);
+                            NotificationPreferences.setComplaintsEnabled(
+                              value,
+                            );
+                          },
                           title: const Text('إشعارات الشكاوى والاقتراحات'),
                           subtitle: const Text('ردود الإدارة'),
                           activeColor: AppColors.primary,
@@ -81,9 +104,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const Divider(height: 1),
                         SwitchListTile(
                           value: _generalNotifications,
-                          onChanged:
-                              (value) =>
-                                  setState(() => _generalNotifications = value),
+                          onChanged: (value) {
+                            setState(() => _generalNotifications = value);
+                            NotificationPreferences.setGeneralEnabled(value);
+                          },
                           title: const Text('إشعارات عامة'),
                           subtitle: const Text(
                             'إعلانات وتنبيهات المدينة الجامعية',
@@ -143,7 +167,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.logout,
                           title: 'تسجيل الخروج',
                           titleColor: AppColors.error,
-                          onTap: () {
+                          onTap: () async {
+                            final confirmed = await confirmAction(
+                              context,
+                              title: 'تسجيل الخروج',
+                              message: 'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+                              confirmLabel: 'تسجيل الخروج',
+                            );
+                            if (!confirmed || !context.mounted) return;
+
                             final fcmToken =
                                 PushNotificationService.instance.fcmToken;
                             if (fcmToken != null) {
@@ -152,6 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             }
                             AuthRepositoryImpl().logout();
                             context.read<UserSessionCubit>().clear();
+                            if (!context.mounted) return;
                             context.goNamed(AppRoutes.login);
                           },
                         ),

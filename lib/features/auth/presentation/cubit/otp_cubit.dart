@@ -82,6 +82,17 @@ class OtpCubit extends Cubit<OtpState> {
     };
   }
 
+  /// يعيد الحالة إلى [OtpStatus.idle] بعد أن تعرض الشاشة رسالة الفشل مرة
+  /// واحدة. بدون هذا، تبقى [OtpStatus.failure] كما هي بين تكات مؤقت إعادة
+  /// الإرسال (الذي يستمر بالعمل بشكل مستقل كل ثانية)، فتُعيد كل تكة إطلاق
+  /// نفس معالجة الفشل بواجهة المستخدم (مسح الخانات وإظهار الرسالة من
+  /// جديد)، فيبدو الأمر وكأن أي رقم يُكتب يُحذف فوراً.
+  void clearFailure() {
+    if (state.status == OtpStatus.failure) {
+      emit(state.copyWith(status: OtpStatus.idle));
+    }
+  }
+
   Future<void> resendOtp() async {
     if (!state.canResend) return;
 

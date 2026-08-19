@@ -139,6 +139,7 @@ class _OtpViewState extends State<_OtpView> {
                       content: Text(state.errorMessage ?? 'حدث خطأ غير متوقع'),
                     ),
                   );
+                context.read<OtpCubit>().clearFailure();
               }
             },
             builder: (context, state) {
