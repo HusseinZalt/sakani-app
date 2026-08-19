@@ -4,9 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/auth/domain/entities/auth_user.dart';
 
-/// تخزين محلي بسيط (SharedPreferences) لجلسة المستخدم الحالية وحالة
-/// التفعيل المعلّقة (حساب أنشئ ولم يُؤكَّد بعد عبر OTP)، بحيث لا تضيع
-/// عند تحديث صفحة الويب أو إغلاق التطبيق وإعادة فتحه.
+/// تخزين محلي بسيط (SharedPreferences) لجلسة المستخدم الحالية، بحيث لا
+/// تضيع عند تحديث صفحة الويب أو إغلاق التطبيق وإعادة فتحه.
 ///
 /// نقطة الربط مع الباك إند: عند توفر توكن حقيقي، يُخزَّن هنا أيضاً بنفس
 /// الطريقة دون تغيير طريقة استخدام هذا الصف من بقية طبقات التطبيق.
@@ -14,7 +13,6 @@ class SessionStorage {
   const SessionStorage._();
 
   static const _userKey = 'session_user';
-  static const _pendingVerificationKey = 'pending_verification_identifier';
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
 
@@ -66,23 +64,6 @@ class SessionStorage {
   static Future<void> clearUser() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
-  }
-
-  /// حفظ معرّف (بريد/جوال) حساب أُنشئ ولم يُكمل صاحبه تأكيده عبر OTP بعد،
-  /// لتوجيهه مباشرة لشاشة التأكيد عند إعادة فتح التطبيق.
-  static Future<void> savePendingVerification(String identifier) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_pendingVerificationKey, identifier);
-  }
-
-  static Future<String?> loadPendingVerification() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_pendingVerificationKey);
-  }
-
-  static Future<void> clearPendingVerification() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_pendingVerificationKey);
   }
 
   /// حفظ زوج رمزَي الدخول (Access/Refresh Token) بعد تسجيل الدخول الناجح،

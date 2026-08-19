@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_result.dart';
-import '../../../../core/session/session_storage.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'otp_state.dart';
@@ -13,15 +12,14 @@ import 'otp_state.dart';
 ///
 /// بما أن تأكيد البريد وحده لا يُرجع جلسة دخول (خدمة المصادقة تفصل بين
 /// `verify-email` و`login`)، يقوم هذا الـ Cubit تلقائياً بتسجيل الدخول
-/// بعد نجاح التأكيد إن كانت كلمة المرور متوفرة معه (تُمرَّر فقط من شاشتي
+/// بعد نجاح التأكيد إن كانت كلمة المرور متوفرة معه (تُمرَّر من شاشتي
 /// التسجيل أو الدخول مباشرة، ولا تُخزَّن محلياً لأسباب أمنية). إن لم تكن
-/// متوفرة (مثال: استئناف تأكيد معلَّق بعد إعادة فتح التطبيق)، يُترك
-/// [OtpState.user] فارغاً وتوجّه الشاشة المستخدم لتسجيل الدخول يدوياً.
+/// متوفرة لأي سبب، يُترك [OtpState.user] فارغاً وتوجّه الشاشة المستخدم
+/// لتسجيل الدخول يدوياً.
 class OtpCubit extends Cubit<OtpState> {
   OtpCubit(this._authRepository, {required this.identifier, this.password})
     : super(const OtpState()) {
     _startResendTimer();
-    SessionStorage.savePendingVerification(identifier);
   }
 
   final AuthRepository _authRepository;
@@ -56,7 +54,6 @@ class OtpCubit extends Cubit<OtpState> {
 
     switch (result) {
       case ApiSuccess<void>():
-        SessionStorage.clearPendingVerification();
         final user = await _tryAutoLogin();
         emit(state.copyWith(status: OtpStatus.verified, user: user));
       case ApiFailureResult<void>(:final failure):

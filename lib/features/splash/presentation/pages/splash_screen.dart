@@ -4,17 +4,20 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routing/app_router.dart';
-import '../../../../core/session/session_storage.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/widgets/app_logo.dart';
-import '../../../auth/presentation/pages/otp_verification_screen.dart';
 
 /// شاشة البداية (Splash) التي تظهر عند تشغيل التطبيق أثناء التحقق من
 /// وجود جلسة محفوظة محلياً (عبر [SessionStorage])، قبل التوجيه التلقائي
 /// إلى الوجهة المناسبة:
 /// - جلسة مستخدم مؤكَّدة محفوظة → الرئيسية مباشرة.
-/// - حساب أُنشئ ولم يُكمل صاحبه تأكيده عبر OTP → شاشة التأكيد مباشرة.
-/// - لا شيء محفوظ → شاشة تسجيل الدخول.
+/// - غير ذلك (بلا جلسة، أو حساب لم يُؤكَّد بعد) → شاشة تسجيل الدخول؛ محاولة
+///   الدخول نفسها هي يلي بتكتشف الحساب غير المؤكَّد وتوجّه لشاشة OTP مع
+///   إعادة إرسال رمز حقيقية (راجع `login_screen.dart`). عمداً لا يوجد
+///   توجيه تلقائي مباشر لشاشة OTP من هون: كان بيعتمد على مؤقّت عدّ تنازلي
+///   محلي بالكامل (60 ثانية) يُعاد ضبطه من الصفر عند كل إعادة توجيه، بغض
+///   النظر عن الوقت الحقيقي المنقضي فعلياً منذ آخر رمز أُرسل — فيبدو
+///   وكأن "ما بيخليك تطلب رمز جديد" حتى لو مرّت مدة طويلة والتطبيق مغلق.
 ///
 /// لاحقاً عند ربط الباك إند، يُستبدل هذا التحقق المحلي بتحقق فعلي من
 /// صلاحية رمز الدخول (Token) المحفوظ مع الخادم.
@@ -36,22 +39,11 @@ class _SplashScreenState extends State<SplashScreen> {
     final minDelay = Future.delayed(const Duration(seconds: 2));
 
     final savedUser = await context.read<UserSessionCubit>().restore();
-    if (savedUser != null && savedUser.isVerified) {
-      await minDelay;
-      if (!mounted) return;
-      context.goNamed(AppRoutes.home);
-      return;
-    }
-
-    final pendingIdentifier = await SessionStorage.loadPendingVerification();
     await minDelay;
     if (!mounted) return;
 
-    if (pendingIdentifier != null && pendingIdentifier.isNotEmpty) {
-      context.goNamed(
-        AppRoutes.otp,
-        extra: OtpRouteArgs(identifier: pendingIdentifier),
-      );
+    if (savedUser != null && savedUser.isVerified) {
+      context.goNamed(AppRoutes.home);
     } else {
       context.goNamed(AppRoutes.login);
     }

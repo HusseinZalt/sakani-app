@@ -60,6 +60,45 @@ class _LoginViewState extends State<_LoginView> {
     );
   }
 
+  Future<void> _showUnverifiedAccountDialog({
+    required String message,
+    required String email,
+    required String password,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('الحساب غير مفعّل'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text(
+                  'إعادة إرسال الرمز',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    AuthRepositoryImpl().resendVerification(email: email);
+    if (!mounted) return;
+    context.pushNamed(
+      AppRoutes.otp,
+      extra: OtpRouteArgs(identifier: email, password: password),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -75,29 +114,11 @@ class _LoginViewState extends State<_LoginView> {
                 context.goNamed(AppRoutes.home);
               case LoginFailureState(:final failure)
                   when failure.type == ApiErrorType.unverifiedAccount:
-                final email = _emailController.text.trim();
-                final password = _passwordController.text;
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text(failure.message),
-                      duration: const Duration(seconds: 6),
-                      action: SnackBarAction(
-                        label: 'إعادة إرسال رمز التفعيل',
-                        onPressed: () {
-                          AuthRepositoryImpl().resendVerification(email: email);
-                          context.pushNamed(
-                            AppRoutes.otp,
-                            extra: OtpRouteArgs(
-                              identifier: email,
-                              password: password,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
+                _showUnverifiedAccountDialog(
+                  message: failure.message,
+                  email: _emailController.text.trim(),
+                  password: _passwordController.text,
+                );
               case LoginFailureState(:final failure):
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
