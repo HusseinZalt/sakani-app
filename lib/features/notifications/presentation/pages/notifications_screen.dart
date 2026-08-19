@@ -115,7 +115,7 @@ class _NotificationsViewState extends State<_NotificationsView> {
     };
 
     for (final notification in notifications) {
-      final date = notification.createdAt;
+      final date = notification.createdAt.toLocal();
       final day = DateTime(date.year, date.month, date.day);
       if (day == today) {
         groups['اليوم']!.add(notification);

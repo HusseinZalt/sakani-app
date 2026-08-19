@@ -1,4 +1,5 @@
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/parse_utc_date_time.dart';
 import '../../domain/entities/complaint.dart';
 import '../../domain/entities/complaint_reply.dart';
 
@@ -8,7 +9,7 @@ class ComplaintReplyModel extends ComplaintReply {
   factory ComplaintReplyModel.fromJson(Map<String, dynamic> json) {
     return ComplaintReplyModel(
       text: json['text'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: parseUtcDateTime(json['createdAt'] as String),
     );
   }
 }
@@ -55,7 +56,7 @@ class ComplaintModel extends Complaint {
       // 'resolved' الآن تعني رداً فعلياً من الإدارة (adminReply)، وليس
       // مجرد مراجعة (isRead) — أدق تمثيلاً لما تعنيه "تم الحل" فعلياً.
       status: replyText != null ? 'resolved' : 'pending',
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: parseUtcDateTime(json['createdAt'] as String),
       isAnonymous: json['isAnonymous'] as bool? ?? false,
       imageUrls: images,
       adminReply:
@@ -64,8 +65,8 @@ class ComplaintModel extends Complaint {
                 text: replyText,
                 createdAt:
                     repliedAt != null
-                        ? DateTime.parse(repliedAt)
-                        : DateTime.now(),
+                        ? parseUtcDateTime(repliedAt)
+                        : DateTime.now().toUtc(),
               )
               : null,
     );

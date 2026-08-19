@@ -1,3 +1,4 @@
+import '../../../../core/utils/parse_utc_date_time.dart';
 import '../../domain/entities/maintenance_request.dart';
 
 /// نموذج بيانات طلب الخدمة (Model)، مسؤول عن تحويل استجابة الـ JSON
@@ -24,7 +25,7 @@ class MaintenanceRequestModel extends MaintenanceRequest {
       description: json['description'] as String,
       category: json['category'] as String,
       status: json['status'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: parseUtcDateTime(json['createdAt'] as String),
       imageUrl: json['imageUrl'] as String?,
     );
   }

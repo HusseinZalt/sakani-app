@@ -1,3 +1,4 @@
+import '../../../../core/utils/parse_utc_date_time.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 
@@ -26,7 +27,7 @@ class HousingRequestModel extends HousingRequest {
       roomType: json['roomType'] as String,
       preferredBuilding: json['preferredBuilding'] as String,
       status: json['status'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: parseUtcDateTime(json['createdAt'] as String),
       groupCode: json['groupCode'] as String?,
       documents:
           (json['documents'] as List<dynamic>?)

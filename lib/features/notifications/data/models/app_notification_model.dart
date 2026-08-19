@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../../core/utils/parse_utc_date_time.dart';
 import '../../../../core/utils/relative_time.dart';
 import '../../domain/entities/app_notification.dart';
 
@@ -46,7 +47,7 @@ class AppNotificationModel extends AppNotification {
     }
 
     final type = data?['type'] as String?;
-    final createdAt = DateTime.parse(json['createdAt'] as String);
+    final createdAt = parseUtcDateTime(json['createdAt'] as String);
 
     return AppNotificationModel(
       id: json['notificationId'].toString(),
