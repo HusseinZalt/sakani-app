@@ -232,47 +232,93 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
             itemBuilder: (context, index) {
               final announcement = widget.announcements[index];
               final isWarning = announcement.colorVariant == 'warning';
+              final imageUrl = announcement.imageUrl;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient:
-                        isWarning
-                            ? AppColors.warningGradient
-                            : AppColors.accentGradient,
+                child: GestureDetector(
+                  onTap:
+                      () => context.pushNamed(
+                        AppRoutes.adDetails,
+                        pathParameters: {'id': announcement.id},
+                        extra: announcement,
+                      ),
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.xl),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isWarning
-                                ? AppColors.amber500
-                                : AppColors.violet500)
-                            .withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient:
+                            isWarning
+                                ? AppColors.warningGradient
+                                : AppColors.accentGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isWarning
+                                    ? AppColors.amber500
+                                    : AppColors.violet500)
+                                .withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        announcement.title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (imageUrl != null)
+                            Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stackTrace) =>
+                                      const SizedBox.shrink(),
+                            ),
+                          if (imageUrl != null)
+                            const DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black87,
+                                  ],
+                                  stops: [0.4, 1],
+                                ),
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  announcement.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  announcement.subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        announcement.subtitle,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               );

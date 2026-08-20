@@ -1,3 +1,5 @@
+import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/parse_utc_date_time.dart';
 import '../../domain/entities/home_dashboard.dart';
 
 class HousingStatusModel extends HousingStatus {
@@ -25,7 +27,10 @@ class AnnouncementModel extends Announcement {
     required super.id,
     required super.title,
     required super.subtitle,
-    required super.colorVariant,
+    super.imageUrl,
+    super.colorVariant,
+    super.startDate,
+    super.endDate,
   });
 
   factory AnnouncementModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +40,31 @@ class AnnouncementModel extends Announcement {
       subtitle: json['subtitle'] as String,
       colorVariant: json['colorVariant'] as String,
     );
+  }
+
+  /// يحوّل عنصر `AdvertisementDto` من خدمة الإعلانات الحقيقية (ASP.NET
+  /// Core، راجع `/swagger`) إلى نموذج التطبيق. `colorVariant` يبقى بقيمته
+  /// الافتراضية (تُستخدم فقط كاحتياط عند غياب [imageUrl]).
+  factory AnnouncementModel.fromAdJson(Map<String, dynamic> json) {
+    final startDate = json['startDate'] as String?;
+    final endDate = json['endDate'] as String?;
+    return AnnouncementModel(
+      id: json['id'].toString(),
+      title: json['title'] as String? ?? '',
+      subtitle: json['description'] as String? ?? '',
+      imageUrl: _resolveImageUrl(json['imageUrl'] as String?),
+      startDate: startDate != null ? parseUtcDateTime(startDate) : null,
+      endDate: endDate != null ? parseUtcDateTime(endDate) : null,
+    );
+  }
+
+  static String? _resolveImageUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final normalized = path.startsWith('/') ? path : '/$path';
+    return '${ApiClient.adsBaseUrl}$normalized';
   }
 }
 

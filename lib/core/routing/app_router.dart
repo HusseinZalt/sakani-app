@@ -10,6 +10,8 @@ import '../../features/complaints/presentation/pages/add_complaint_screen.dart';
 import '../../features/complaints/presentation/pages/complaint_detail_screen.dart';
 import '../../features/complaints/presentation/pages/complaints_screen.dart';
 import '../../features/groups/presentation/pages/groups_screen.dart';
+import '../../features/home/domain/entities/home_dashboard.dart';
+import '../../features/home/presentation/pages/ad_detail_screen.dart';
 import '../../features/home/presentation/pages/home_screen.dart';
 import '../../features/home/presentation/pages/main_shell_screen.dart';
 import '../../features/housing_request/presentation/pages/housing_request_screen.dart';
@@ -50,6 +52,7 @@ class AppRoutes {
   static const editProfile = 'editProfile';
   static const maintenanceList = 'maintenanceList';
   static const createMaintenance = 'createMaintenance';
+  static const adDetails = 'adDetails';
   static const changePassword = 'changePassword';
   static const privacyPolicy = 'privacyPolicy';
   static const documents = 'documents';
@@ -73,6 +76,7 @@ class AppRoutes {
   static const editProfilePath = '/edit-profile';
   static const maintenanceListPath = '/maintenance';
   static const createMaintenancePath = 'new';
+  static const adDetailsPath = '/ads/:id';
   static const changePasswordPath = '/change-password';
   static const privacyPolicyPath = '/privacy-policy';
   static const documentsPath = '/documents';
@@ -196,6 +200,19 @@ class AppRouter {
                 ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.adDetailsPath,
+        name: AppRoutes.adDetails,
+        parentNavigatorKey: rootNavigatorKey,
+        builder:
+            (context, state) => AdDetailScreen(
+              adId: state.pathParameters['id']!,
+              announcement:
+                  state.extra is Announcement
+                      ? state.extra as Announcement
+                      : null,
+            ),
       ),
       GoRoute(
         path: AppRoutes.maintenanceListPath,

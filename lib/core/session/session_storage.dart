@@ -32,6 +32,7 @@ class SessionStorage {
         'city': user.city,
         'nationalId': user.nationalId,
         'isVerified': user.isVerified,
+        'gender': user.gender,
       }),
     );
   }
@@ -55,6 +56,7 @@ class SessionStorage {
         city: json['city'] as String?,
         nationalId: json['nationalId'] as String?,
         isVerified: json['isVerified'] as bool? ?? true,
+        gender: json['gender'] as String?,
       );
     } catch (_) {
       return null;

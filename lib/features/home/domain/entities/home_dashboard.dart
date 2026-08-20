@@ -29,24 +29,44 @@ class HousingStatus extends Equatable {
   ];
 }
 
-/// إعلان إداري يظهر ضمن الشريط الدوّار (Swiper) أعلى الرئيسية.
+/// إعلان إداري يظهر ضمن الشريط الدوّار (Swiper) أعلى الرئيسية، وكذلك
+/// بشاشة تفاصيله الخاصة عند الضغط عليه (من الشريط أو من إشعار مرتبط).
 class Announcement extends Equatable {
   const Announcement({
     required this.id,
     required this.title,
     required this.subtitle,
-    required this.colorVariant,
+    this.imageUrl,
+    this.colorVariant = 'primary',
+    this.startDate,
+    this.endDate,
   });
 
   final String id;
   final String title;
   final String subtitle;
 
-  /// نمط لوني للبطاقة: 'primary' أو 'warning'، يحدد التدرج اللوني المستخدم.
+  /// صورة الإعلان الفعلية (خدمة الإعلانات الحقيقية). عند توفرها تُعرض
+  /// كخلفية البطاقة بدل التدرج اللوني الثابت.
+  final String? imageUrl;
+
+  /// نمط لوني احتياطي للبطاقة عند غياب [imageUrl]: 'primary' أو 'warning'.
   final String colorVariant;
 
+  /// فترة سريان الإعلان (من خدمة الإعلانات الحقيقية).
+  final DateTime? startDate;
+  final DateTime? endDate;
+
   @override
-  List<Object?> get props => [id, title, subtitle, colorVariant];
+  List<Object?> get props => [
+    id,
+    title,
+    subtitle,
+    imageUrl,
+    colorVariant,
+    startDate,
+    endDate,
+  ];
 }
 
 /// عنصر في سجل آخر النشاطات.

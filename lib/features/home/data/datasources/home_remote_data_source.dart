@@ -1,25 +1,22 @@
 import '../../../housing_request/data/datasources/housing_request_remote_data_source.dart';
 import '../models/home_dashboard_model.dart';
+import 'ads_remote_data_source.dart';
 
 /// مصدر بيانات لوحة الرئيسية.
 ///
 /// ==================================================================
-/// **نقطة الربط مع الباك إند:** هذا التنفيذ وهمي بالكامل حالياً (بيانات
-/// ثابتة + محاكاة زمن استجابة الشبكة) نظراً لعدم جاهزية الباك إند بعد.
-/// عند الربط الحقيقي، يكفي استبدال محتوى هذا الملف باستدعاء نقطة نهاية
-/// مجمّعة واحدة (مثال: `GET /api/dashboard`) تُرجع نفس بنية JSON، دون أي
-/// تعديل على الـ Repository أو الـ Cubit أو الشاشة.
+/// **نقطة الربط مع الباك إند:** حالة السكن والإعلانات مربوطتان بخدمتَين
+/// حقيقيتَين فعلياً (راجع [HousingRequestRemoteDataSource] و
+/// [AdsRemoteDataSource])؛ اسم الطالب وسجل آخر النشاطات لا يزالان بيانات
+/// وهمية بانتظار خدمة حقيقية تجمّعهما.
 /// ==================================================================
 class HomeRemoteDataSource {
-  static const _networkDelay = Duration(milliseconds: 700);
-
   Future<HomeDashboardModel> fetchDashboard() async {
-    await Future.delayed(_networkDelay);
-
     // حالة السكن مُشتقة من طلب السكن الفعلي للمستخدم (وليست قيمة ثابتة)،
     // حتى تبقى الرئيسية متسقة مع ما قدّمه المستخدم فعلياً بدل الادّعاء
     // الدائم بأنه مقبول في غرفة A-204 بغض النظر عن الواقع.
     final myRequest = await HousingRequestRemoteDataSource().fetchMyRequest();
+    final ads = await AdsRemoteDataSource().fetchActiveAds();
     final Map<String, dynamic> housingStatus =
         myRequest == null
             ? {'status': 'none'}
@@ -35,29 +32,10 @@ class HomeRemoteDataSource {
               _ => {'status': 'pending'},
             };
 
-    return HomeDashboardModel.fromJson({
+    final baseJson = HomeDashboardModel.fromJson({
       'studentName': 'أحمد محمد',
       'housingStatus': housingStatus,
-      'announcements': [
-        {
-          'id': 'ann_1',
-          'title': 'فعالية الترحيب بالطلاب الجدد 🎉',
-          'subtitle': 'الأحد القادم — الساحة الرئيسية',
-          'colorVariant': 'primary',
-        },
-        {
-          'id': 'ann_2',
-          'title': 'تمديد فترة سداد الرسوم',
-          'subtitle': 'حتى نهاية الشهر الحالي',
-          'colorVariant': 'warning',
-        },
-        {
-          'id': 'ann_3',
-          'title': 'صيانة دورية لشبكة الإنترنت',
-          'subtitle': 'الخميس، من 2-4 عصراً',
-          'colorVariant': 'primary',
-        },
-      ],
+      'announcements': const [],
       'activities': [
         {
           'id': 'act_1',
@@ -79,5 +57,12 @@ class HomeRemoteDataSource {
         },
       ],
     });
+
+    return HomeDashboardModel(
+      studentName: baseJson.studentName,
+      housingStatus: baseJson.housingStatus,
+      announcements: ads,
+      activities: baseJson.activities,
+    );
   }
 }

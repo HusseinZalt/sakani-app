@@ -25,6 +25,7 @@ class AuthUser extends Equatable {
     this.isVerified = true,
     this.role,
     this.verificationStatus,
+    this.gender,
   });
 
   final String id;
@@ -37,6 +38,10 @@ class AuthUser extends Equatable {
   final String? college;
   final String? city;
   final String? nationalId;
+
+  /// 'male' أو 'female' كما تُرجعها خدمة المصادقة — تُستخدم لاستهداف
+  /// الإعلانات حسب الجنس (`TargetGender` بخدمة الإعلانات).
+  final String? gender;
 
   /// هل أكمل المستخدم تأكيد بريده الإلكتروني عبر رمز الـ OTP بعد التسجيل.
   final bool isVerified;
@@ -62,6 +67,7 @@ class AuthUser extends Equatable {
     bool? isVerified,
     String? role,
     String? verificationStatus,
+    String? gender,
   }) {
     return AuthUser(
       id: id,
@@ -77,6 +83,7 @@ class AuthUser extends Equatable {
       isVerified: isVerified ?? this.isVerified,
       role: role ?? this.role,
       verificationStatus: verificationStatus ?? this.verificationStatus,
+      gender: gender ?? this.gender,
     );
   }
 
@@ -92,6 +99,7 @@ class AuthUser extends Equatable {
     college,
     city,
     nationalId,
+    gender,
     isVerified,
     role,
     verificationStatus,
