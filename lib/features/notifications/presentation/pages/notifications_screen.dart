@@ -68,6 +68,14 @@ class _NotificationsViewState extends State<_NotificationsView> {
         } else {
           await context.pushNamed(AppRoutes.complaints);
         }
+      case 'ad':
+        final id = notification.relatedId;
+        if (id != null) {
+          await context.pushNamed(
+            AppRoutes.adDetails,
+            pathParameters: {'id': id},
+          );
+        }
       default:
         break;
     }

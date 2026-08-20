@@ -89,15 +89,29 @@ class ApiClient {
     }
   }
 
-  /// خدمة المصادقة (Node/Express على Vercel).
-  static const String authBaseUrl = 'https://university-auth-lemon.vercel.app';
+  /// نقطة الدخول الموحّدة (API Gateway، Ocelot) لكل خدمات الباك إند — راجع
+  /// `Gateway_Guide.md`. كل الخدمات (المصادقة، الآراء، الإعلانات،
+  /// الإشعارات) بقيت خلفه الآن، بمسارات ثابتة بغض النظر عن أي خدمة
+  /// تخدمها فعلياً خلف الكواليس؛ لم تعد هناك حاجة لعناوين مباشرة منفصلة
+  /// لكل خدمة.
+  static const String gatewayBaseUrl = 'http://gateway001.runasp.net';
 
-  /// خدمة الآراء والشكاوى/الاقتراحات (ASP.NET Core).
-  static const String feedbackBaseUrl = 'http://feedbackservice001.runasp.net';
+  /// خدمة المصادقة — كانت سابقاً مستضافة خارج البوابة (Vercel مباشرة)،
+  /// وأصبحت الآن مربوطة بالبوابة أيضاً بنفس المسارات (`/api/auth/...`،
+  /// `/api/admin/...`).
+  static const String authBaseUrl = gatewayBaseUrl;
 
-  /// خدمة الإشعارات (ASP.NET Core) — صندوق الوارد الشخصي وتسجيل رمز الجهاز.
-  static const String notificationsBaseUrl =
-      'http://notificationservice001.runasp.net';
+  /// خدمة الآراء والشكاوى/الاقتراحات.
+  static const String feedbackBaseUrl = gatewayBaseUrl;
+
+  /// خدمة الإشعارات — صندوق الوارد الشخصي. ⚠️ لم يعد لهذه الخدمة نقطة
+  /// تسجيل رمز جهاز منفصلة (`/api/device-tokens` أُزيلت نهائياً)؛ تسجيل
+  /// رمز FCM يتم الآن حصراً ضمن جسم طلب تسجيل الدخول/التسجيل بخدمة
+  /// المصادقة نفسها (مطبَّق أصلاً بـ `auth_remote_data_source.dart`).
+  static const String notificationsBaseUrl = gatewayBaseUrl;
+
+  /// خدمة الإعلانات — الإعلانات الإدارية المعروضة بالرئيسية.
+  static const String adsBaseUrl = gatewayBaseUrl;
 
   /// للتوافق مع الاستخدام الحالي في طبقة المصادقة — نفس [auth].
   static final ApiClient instance = ApiClient._(authBaseUrl);
@@ -105,6 +119,7 @@ class ApiClient {
   static final ApiClient auth = instance;
   static final ApiClient feedback = ApiClient._(feedbackBaseUrl);
   static final ApiClient notifications = ApiClient._(notificationsBaseUrl);
+  static final ApiClient ads = ApiClient._(adsBaseUrl);
 
   final String baseUrl;
 

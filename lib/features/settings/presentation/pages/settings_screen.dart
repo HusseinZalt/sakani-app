@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/notifications/notification_preferences.dart';
-import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/theme/theme_controller.dart';
@@ -12,7 +11,6 @@ import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../auth/data/repositories/auth_repository_impl.dart';
-import '../../../notifications/data/datasources/notifications_remote_data_source.dart';
 
 /// شاشة إعدادات التطبيق — مطابقة للشاشة 12 من التصميم المعتمد.
 class SettingsScreen extends StatefulWidget {
@@ -25,7 +23,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _housingNotifications = true;
   bool _complaintsNotifications = true;
-  bool _generalNotifications = false;
+  bool _generalNotifications = true;
 
   @override
   void initState() {
@@ -176,12 +174,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             );
                             if (!confirmed || !context.mounted) return;
 
-                            final fcmToken =
-                                PushNotificationService.instance.fcmToken;
-                            if (fcmToken != null) {
-                              NotificationsRemoteDataSource()
-                                  .unregisterDeviceToken(fcmToken);
-                            }
                             AuthRepositoryImpl().logout();
                             context.read<UserSessionCubit>().clear();
                             if (!context.mounted) return;

@@ -23,13 +23,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// والتنقّل للشاشة المناسبة عند الضغط على الإشعار.
 ///
 /// ==================================================================
-/// **نقطة الربط مع الباك إند:** [fcmToken] يجب إرساله لنقطة نهاية تسجيل
-/// جهاز المستخدم فور توفرها من فريق الباك إند، حتى يعرفوا لأي جهاز
-/// يرسلون الإشعار. راجع التعليق عند [onTokenRegistered].
-///
-/// **ملاحظة مهمة:** [initialize] لا يُستدعى بعد من `main.dart` — بانتظار
-/// ملف `google-services.json` الخاص بالمشروع وتفعيل Google Services
-/// Gradle Plugin على مستوى أندرويد، وإلا فشل بناء التطبيق بالكامل فوراً.
+/// **نقطة الربط مع الباك إند:** [fcmToken] يُرسَل ضمن جسم طلب تسجيل
+/// الدخول/التسجيل (`auth_remote_data_source.dart`) — المصدر الوحيد
+/// لتسجيله لدى الباك إند (لا توجد نقطة تسجيل جهاز منفصلة، راجع
+/// `Gateway_Guide.md`). يعني هذا أن تغيّر الرمز (نادر) بينما المستخدم
+/// لا يزال بجلسة سابقة دون إعادة تسجيل دخول لن يُبلَّغ للباك إند — قيد
+/// معروف بتصميم الباك إند الحالي، وليس نقصاً بالتطبيق.
 /// ==================================================================
 class PushNotificationService {
   PushNotificationService._();
@@ -48,10 +47,6 @@ class PushNotificationService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
-  /// يُستدعى كل مرة يتغيّر فيها رمز الجهاز (نادر، لكن ممكن). اربطه بنداء
-  /// API فعلي لتسجيل/تحديث الرمز بمجرد توفر نقطة النهاية من الباك إند.
-  void Function(String token)? onTokenRegistered;
-
   Future<void> initialize() async {
     await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -65,11 +60,9 @@ class PushNotificationService {
     await _initLocalNotifications();
 
     _fcmToken = await FirebaseMessaging.instance.getToken();
-    if (_fcmToken != null) onTokenRegistered?.call(_fcmToken!);
 
     FirebaseMessaging.instance.onTokenRefresh.listen((token) {
       _fcmToken = token;
-      onTokenRegistered?.call(token);
     });
 
     // التطبيق مفتوح حالياً (foreground): FCM لا يعرض الإشعار تلقائياً على
@@ -168,6 +161,13 @@ class PushNotificationService {
           );
         } else {
           router.pushNamed(AppRoutes.complaints);
+        }
+      case 'ad':
+        if (relatedId != null) {
+          router.pushNamed(
+            AppRoutes.adDetails,
+            pathParameters: {'id': relatedId},
+          );
         }
       default:
         if (kDebugMode) {

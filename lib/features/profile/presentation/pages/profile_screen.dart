@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/utils/avatar_image.dart';
@@ -11,7 +10,6 @@ import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../auth/data/repositories/auth_repository_impl.dart';
-import '../../../notifications/data/datasources/notifications_remote_data_source.dart';
 
 /// شاشة الملف الشخصي للطالب (تبويب "الملف") — مطابقة للشاشة 8 من التصميم
 /// المعتمد.
@@ -153,12 +151,6 @@ class ProfileScreen extends StatelessWidget {
                                   );
                                   if (!confirmed || !context.mounted) return;
 
-                                  final fcmToken =
-                                      PushNotificationService.instance.fcmToken;
-                                  if (fcmToken != null) {
-                                    NotificationsRemoteDataSource()
-                                        .unregisterDeviceToken(fcmToken);
-                                  }
                                   AuthRepositoryImpl().logout();
                                   context.read<UserSessionCubit>().clear();
                                   if (!context.mounted) return;

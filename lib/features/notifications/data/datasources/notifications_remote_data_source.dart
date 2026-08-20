@@ -17,8 +17,8 @@ class NotificationsException implements Exception {
   final ApiErrorType type;
 }
 
-/// مصدر بيانات الإشعارات — يستدعي خدمة الإشعارات الحقيقية (ASP.NET Core
-/// على `notificationservice001.runasp.net`، راجع `/swagger`).
+/// مصدر بيانات الإشعارات — يستدعي خدمة الإشعارات الحقيقية عبر البوابة
+/// الموحّدة (API Gateway، راجع `Gateway_Guide.md`).
 ///
 /// **مؤكَّد بالاختبار الفعلي (2026-08-18):** `GET /api/Notifications` (بدون
 /// `/mine`) مقصورة على الإدارة (403 لحساب طالب)، تماماً كما كان الحال مع
@@ -54,33 +54,6 @@ class NotificationsRemoteDataSource {
       await _dio.post<dynamic>('/api/Notifications/$id/read', data: {});
     } on DioException catch (e) {
       throw _mapDioException(e);
-    }
-  }
-
-  /// يسجّل رمز الجهاز (FCM Token) الحالي لدى خدمة الإشعارات، حتى تعرف لأي
-  /// جهاز ترسل الإشعارات الفورية لهذا المستخدم.
-  Future<void> registerDeviceToken(String fcmToken) async {
-    try {
-      await _dio.post<dynamic>(
-        '/api/device-tokens',
-        data: {'fcmToken': fcmToken, 'platform': 'android'},
-      );
-    } on DioException catch (_) {
-      // تسجيل رمز الجهاز أفضل الجهد — فشله لا يجب أن يعطّل تسجيل
-      // الدخول/التطبيق (قد لا تتوفر خدمة الإشعارات مؤقتاً مثلاً).
-    }
-  }
-
-  /// يلغي تسجيل رمز الجهاز الحالي (عند تسجيل الخروج)، حتى لا يستمر الخادم
-  /// بمحاولة إرسال إشعارات لجهاز خرج صاحبه من حسابه.
-  Future<void> unregisterDeviceToken(String fcmToken) async {
-    try {
-      await _dio.delete<dynamic>(
-        '/api/device-tokens',
-        queryParameters: {'fcmToken': fcmToken},
-      );
-    } on DioException catch (_) {
-      // أفضل الجهد أيضاً — لا يجب أن يمنع تسجيل الخروج المحلي.
     }
   }
 
