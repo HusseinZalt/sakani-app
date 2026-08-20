@@ -32,17 +32,49 @@ class AdsRemoteDataSource {
   static const _targetGenderMale = 1;
   static const _targetGenderFemale = 2;
 
-  /// يجلب الإعلانات النشطة حالياً (`GET /api/ads/active`) لعرضها بالشريط
-  /// الدوّار أعلى الرئيسية. يُبقي فقط إعلانات نوع "Banner" (المصحوبة
-  /// بصورة) — إعلانات نوع "Notification" (نصية بلا صورة) مكانها الطبيعي
-  /// صندوق الإشعارات وليس شريط الرئيسية المرئي.
-  ///
-  /// تُفلتَر حسب جنس المستخدم الحالي إن كان معروفاً محلياً (`gender` من
-  /// جلسة المستخدم). غير مفلترة حسب الكلية/المحافظة بعد — لا توجد نقطة
-  /// نهاية بخدمة الإعلانات لتحويل اسم الكلية/المحافظة النصي المخزَّن
-  /// بحساب المستخدم إلى المعرّف الرقمي (`collegeId`/`governorateId`)
-  /// الذي تتوقعه.
+  /// أقصى عدد إعلانات تظهر بالشريط الدوّار أعلى الرئيسية.
+  static const _bannerLimit = 3;
+
+  /// يجلب أحدث 3 إعلانات (نوع "Banner" فقط، المصحوبة بصورة) لعرضها
+  /// بالشريط الدوّار أعلى الرئيسية — إعلانات نوع "Notification" (نصية
+  /// بلا صورة) مكانها الطبيعي صندوق الإشعارات وليس شريط الرئيسية المرئي.
   Future<List<AnnouncementModel>> fetchActiveAds() async {
+    try {
+      final all = await _fetchActiveAdsRaw();
+      return all
+          .where(
+            (json) =>
+                json['type'] == _bannerAdType &&
+                (json['imageUrl'] as String?)?.isNotEmpty == true,
+          )
+          .map(AnnouncementModel.fromAdJson)
+          .take(_bannerLimit)
+          .toList();
+    } on AdsException {
+      // فشل جلب الإعلانات لا يجب أن يمنع عرض باقي الرئيسية — يكفي إخفاء
+      // الشريط الدوّار (الشاشة أصلاً بتخفيه لو القائمة فاضية).
+      return const [];
+    }
+  }
+
+  /// يجلب كل الإعلانات النشطة (كلا النوعَين، Banner وNotification) —
+  /// لشاشة "كل الإعلانات". الأحدث أولاً؛ التبديل لـ"الأقدم أولاً" يكون
+  /// بعكس القائمة بالواجهة مباشرة دون نداء شبكة إضافي. بعكس
+  /// [fetchActiveAds]، يترك الأخطاء تنتشر لأن هذه شاشة مستقلة بحاجة
+  /// لعرض رسالة خطأ حقيقية وزر إعادة محاولة، لا إخفاء صامت.
+  Future<List<AnnouncementModel>> fetchAllActiveAds() async {
+    final all = await _fetchActiveAdsRaw();
+    return all.map(AnnouncementModel.fromAdJson).toList();
+  }
+
+  /// النداء المشترك: يجلب الإعلانات النشطة (`GET /api/ads/active`)
+  /// مفلترة حسب جنس المستخدم الحالي إن كان معروفاً محلياً (`gender` من
+  /// جلسة المستخدم)، ومرتَّبة الأحدث أولاً حسب `createdAt`.
+  ///
+  /// غير مفلترة حسب الكلية/المحافظة بعد — لا توجد نقطة نهاية بخدمة
+  /// الإعلانات لتحويل اسم الكلية/المحافظة النصي المخزَّن بحساب المستخدم
+  /// إلى المعرّف الرقمي (`collegeId`/`governorateId`) الذي تتوقعه.
+  Future<List<Map<String, dynamic>>> _fetchActiveAdsRaw() async {
     try {
       final user = await SessionStorage.loadUser();
       final targetGender = switch (user?.gender) {
@@ -57,16 +89,16 @@ class AdsRemoteDataSource {
           if (targetGender != null) 'targetGender': targetGender,
         },
       );
-      final items = _asJsonList(response.data);
-      return items
-          .whereType<Map<String, dynamic>>()
-          .where((json) => json['type'] == _bannerAdType)
-          .map(AnnouncementModel.fromAdJson)
-          .toList();
-    } on DioException {
-      // فشل جلب الإعلانات لا يجب أن يمنع عرض باقي الرئيسية — يكفي إخفاء
-      // الشريط الدوّار (الشاشة أصلاً بتخفيه لو القائمة فاضية).
-      return const [];
+      final items =
+          _asJsonList(response.data).whereType<Map<String, dynamic>>().toList()
+            ..sort(
+              (a, b) => (b['createdAt'] as String? ?? '').compareTo(
+                a['createdAt'] as String? ?? '',
+              ),
+            );
+      return items;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
     }
   }
 

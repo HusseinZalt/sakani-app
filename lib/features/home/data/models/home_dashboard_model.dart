@@ -31,6 +31,7 @@ class AnnouncementModel extends Announcement {
     super.colorVariant,
     super.startDate,
     super.endDate,
+    super.createdAt,
   });
 
   factory AnnouncementModel.fromJson(Map<String, dynamic> json) {
@@ -48,6 +49,7 @@ class AnnouncementModel extends Announcement {
   factory AnnouncementModel.fromAdJson(Map<String, dynamic> json) {
     final startDate = json['startDate'] as String?;
     final endDate = json['endDate'] as String?;
+    final createdAt = json['createdAt'] as String?;
     return AnnouncementModel(
       id: json['id'].toString(),
       title: json['title'] as String? ?? '',
@@ -55,6 +57,7 @@ class AnnouncementModel extends Announcement {
       imageUrl: _resolveImageUrl(json['imageUrl'] as String?),
       startDate: startDate != null ? parseUtcDateTime(startDate) : null,
       endDate: endDate != null ? parseUtcDateTime(endDate) : null,
+      createdAt: createdAt != null ? parseUtcDateTime(createdAt) : null,
     );
   }
 

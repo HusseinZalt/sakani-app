@@ -6,4 +6,7 @@ import '../entities/home_dashboard.dart';
 abstract class AdsRepository {
   /// جلب إعلان واحد بمعرّفه — لشاشة تفاصيل الإعلان عند الوصول عبر إشعار.
   Future<ApiResult<Announcement>> fetchAdById(String id);
+
+  /// جلب كل الإعلانات النشطة (كلا النوعَين) — لشاشة "كل الإعلانات".
+  Future<ApiResult<List<Announcement>>> fetchAllActiveAds();
 }

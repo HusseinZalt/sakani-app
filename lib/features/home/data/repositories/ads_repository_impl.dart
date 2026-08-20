@@ -20,4 +20,16 @@ class AdsRepositoryImpl implements AdsRepository {
       return ApiResult.failure(ApiFailure.unknown());
     }
   }
+
+  @override
+  Future<ApiResult<List<Announcement>>> fetchAllActiveAds() async {
+    try {
+      final ads = await _remoteDataSource.fetchAllActiveAds();
+      return ApiResult.success(ads);
+    } on AdsException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
 }

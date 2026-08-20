@@ -12,6 +12,7 @@ import '../../features/complaints/presentation/pages/complaints_screen.dart';
 import '../../features/groups/presentation/pages/groups_screen.dart';
 import '../../features/home/domain/entities/home_dashboard.dart';
 import '../../features/home/presentation/pages/ad_detail_screen.dart';
+import '../../features/home/presentation/pages/all_ads_screen.dart';
 import '../../features/home/presentation/pages/home_screen.dart';
 import '../../features/home/presentation/pages/main_shell_screen.dart';
 import '../../features/housing_request/presentation/pages/housing_request_screen.dart';
@@ -53,6 +54,7 @@ class AppRoutes {
   static const maintenanceList = 'maintenanceList';
   static const createMaintenance = 'createMaintenance';
   static const adDetails = 'adDetails';
+  static const allAds = 'allAds';
   static const changePassword = 'changePassword';
   static const privacyPolicy = 'privacyPolicy';
   static const documents = 'documents';
@@ -77,6 +79,7 @@ class AppRoutes {
   static const maintenanceListPath = '/maintenance';
   static const createMaintenancePath = 'new';
   static const adDetailsPath = '/ads/:id';
+  static const allAdsPath = '/ads';
   static const changePasswordPath = '/change-password';
   static const privacyPolicyPath = '/privacy-policy';
   static const documentsPath = '/documents';
@@ -200,6 +203,12 @@ class AppRouter {
                 ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.allAdsPath,
+        name: AppRoutes.allAds,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const AllAdsScreen(),
       ),
       GoRoute(
         path: AppRoutes.adDetailsPath,

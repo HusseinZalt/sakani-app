@@ -123,7 +123,7 @@ class _HomeContent extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
             sliver: SliverList.list(
               children: [
-                _AnnouncementsSwiper(announcements: dashboard.announcements),
+                _AnnouncementsSection(announcements: dashboard.announcements),
                 const SizedBox(height: 20),
                 _HousingStatusCard(status: dashboard.housingStatus),
                 const SizedBox(height: 24),
@@ -190,6 +190,50 @@ class _HomeHeader extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AnnouncementsSection extends StatelessWidget {
+  const _AnnouncementsSection({required this.announcements});
+
+  final List<Announcement> announcements;
+
+  @override
+  Widget build(BuildContext context) {
+    if (announcements.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              'آخر الإعلانات',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const Spacer(),
+            InkWell(
+              onTap: () => context.pushNamed(AppRoutes.allAds),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _AnnouncementsSwiper(announcements: announcements),
+      ],
     );
   }
 }

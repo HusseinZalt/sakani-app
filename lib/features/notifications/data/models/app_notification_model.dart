@@ -28,11 +28,15 @@ class AppNotificationModel extends AppNotification {
   /// الخاص بالمستلم.
   ///
   /// حقل `type`/`relatedId` (للتنقّل عند الضغط على الإشعار) غير موجودَين
-  /// كحقلَين مستقلَّين بالـ DTO — يُفكَّان من حقل `data` النصي (JSON) الذي
-  /// يُفترض أن يحمل نفس اصطلاح `{"type": "...", "relatedId": "..."}`
+  /// كحقلَين مستقلَّين بالـ DTO — يُفكَّان من حقل `data` النصي (JSON).
+  /// معظم الخدمات تلتزم باصطلاح `{"type": "...", "relatedId": "..."}`
   /// المستخدم أصلاً في حمولة إشعارات Firebase (راجع
-  /// `push_notification_service.dart`)، طالما التزم به مُصدرو الإشعارات
-  /// (الخدمات الأخرى التي تستدعي `/api/Notifications/broadcast`).
+  /// `push_notification_service.dart`)، **لكن خدمة الإعلانات تخالفه** —
+  /// مؤكَّد بالاستجابة الفعلية (2026-08-20): `data` عندها
+  /// `{"adId": "..."}` فقط، بلا حقل `type` إطلاقاً. لهذا نستنتج `type:
+  /// 'ad'` ضمنياً عند وجود `adId` (بدل الاعتماد فقط على `data['type']`
+  /// الصريح)، وإلا كانت كل إشعارات الإعلانات تصل بدون أي تنقّل عند
+  /// الضغط عليها.
   factory AppNotificationModel.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? data;
     final rawData = json['data'] as String?;
@@ -46,7 +50,9 @@ class AppNotificationModel extends AppNotification {
       }
     }
 
-    final type = data?['type'] as String?;
+    final adId = data?['adId'] as String?;
+    final type = (data?['type'] as String?) ?? (adId != null ? 'ad' : null);
+    final relatedId = (data?['relatedId'] as String?) ?? adId;
     final createdAt = parseUtcDateTime(json['createdAt'] as String);
 
     return AppNotificationModel(
@@ -58,7 +64,7 @@ class AppNotificationModel extends AppNotification {
       colorKey: _colorKeyForType(type),
       isUnread: !(json['isRead'] as bool? ?? false),
       type: type,
-      relatedId: data?['relatedId'] as String?,
+      relatedId: relatedId,
     );
   }
 

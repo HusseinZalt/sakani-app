@@ -40,6 +40,7 @@ class Announcement extends Equatable {
     this.colorVariant = 'primary',
     this.startDate,
     this.endDate,
+    this.createdAt,
   });
 
   final String id;
@@ -57,6 +58,10 @@ class Announcement extends Equatable {
   final DateTime? startDate;
   final DateTime? endDate;
 
+  /// وقت إنشاء الإعلان — يُستخدم للترتيب (الأحدث/الأقدم) وعرض الوقت
+  /// النسبي بشاشة "كل الإعلانات".
+  final DateTime? createdAt;
+
   @override
   List<Object?> get props => [
     id,
@@ -66,6 +71,7 @@ class Announcement extends Equatable {
     colorVariant,
     startDate,
     endDate,
+    createdAt,
   ];
 }
 
