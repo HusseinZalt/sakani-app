@@ -31,7 +31,13 @@ class NotificationPreferences {
 
   static Future<bool> getGeneralEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_generalKey) ?? false;
+    // افتراضي true (وليس false كما كان بشاشة الإعدادات كواجهة وهمية بلا
+    // أثر فعلي سابقاً) — بعد ما صار لهذا المفتاح تأثير حقيقي على عرض
+    // الإشعارات، تركه false افتراضياً كان يُسكت بصمت كل الأنواع غير
+    // housing/complaint (متل إشعارات الإعلانات) لأي مستخدم لم يفتح
+    // الإعدادات يدوياً بعد — يظهر للمستخدم وكأن الإشعارات "معطّلة" بدون
+    // أي فعل منه.
+    return prefs.getBool(_generalKey) ?? true;
   }
 
   static Future<void> setGeneralEnabled(bool value) async {
