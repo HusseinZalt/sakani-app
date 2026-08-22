@@ -8,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'core/constants/app_colors.dart';
+import 'core/notifications/notifications_badge_cubit.dart';
 import 'core/notifications/push_notification_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/session/user_session_cubit.dart';
@@ -80,10 +81,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // مع إعادة بناء تلقائية للمعتمِدين (ChangeNotifierProvider خاص
       // بالكائنات القابلة للاستماع، خلافاً لـ RepositoryProvider العادي).
       value: widget.themeController,
-      child: BlocProvider(
-        // يُوفَّر مرة واحدة هنا في الجذر ليبقى المصدر الوحيد لبيانات المستخدم
-        // الحالي عبر كل شاشات التطبيق.
-        create: (_) => UserSessionCubit(),
+      child: MultiBlocProvider(
+        providers: [
+          // يُوفَّر مرة واحدة هنا في الجذر ليبقى المصدر الوحيد لبيانات
+          // المستخدم الحالي عبر كل شاشات التطبيق.
+          BlocProvider(create: (_) => UserSessionCubit()),
+          // عدّاد الإشعارات غير المقروءة لشارة تبويب الإشعارات بالشريط
+          // السفلي — يُقرأ من هناك دون فتح شاشة الإشعارات نفسها.
+          BlocProvider(create: (_) => NotificationsBadgeCubit()),
+        ],
         child: ListenableBuilder(
           listenable: widget.themeController,
           builder: (context, _) {

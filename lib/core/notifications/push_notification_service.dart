@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../routing/app_router.dart';
 import 'notification_preferences.dart';
+import 'notifications_badge_cubit.dart';
 
 /// معالج الإشعارات الواردة والتطبيق مغلق تماماً أو بالخلفية — يجب أن يكون
 /// دالة top-level (وليس تابعاً لصنف) حسب متطلبات حزمة firebase_messaging،
@@ -133,6 +135,14 @@ class PushNotificationService {
       ),
       payload: jsonEncode(message.data),
     );
+
+    // يحدّث شارة العدد غير المقروء بتبويب الإشعارات فوراً — نفس الطريقة
+    // المستخدمة أصلاً للتنقّل بـ[_navigateFromData] (`context` عبر مفتاح
+    // الملّاح الجذري)، لأن هذه خدمة مفردة مستقلة عن شجرة الواجهات.
+    final context = AppRouter.rootNavigatorKey.currentContext;
+    if (context != null && context.mounted) {
+      context.read<NotificationsBadgeCubit>().increment();
+    }
   }
 
   /// يوجّه المستخدم للشاشة المناسبة حسب حمولة الإشعار (`type`/`relatedId`)،

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/notifications/notifications_badge_cubit.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
@@ -47,7 +48,10 @@ class _NotificationsViewState extends State<_NotificationsView> {
     if (_isNavigating) return;
     _isNavigating = true;
 
-    context.read<NotificationsCubit>().markAsRead(notification.id);
+    if (notification.isUnread) {
+      context.read<NotificationsCubit>().markAsRead(notification.id);
+      context.read<NotificationsBadgeCubit>().decrement();
+    }
 
     switch (notification.type) {
       case 'housing':

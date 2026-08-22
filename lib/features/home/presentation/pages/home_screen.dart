@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -252,9 +254,44 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
     viewportFraction: 0.86,
   );
   int _currentPage = 0;
+  Timer? _autoPlayTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoPlay();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnnouncementsSwiper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // إعادة التشغيل عند تغيّر عدد الإعلانات (مثلاً بعد سحب-للتحديث) حتى لا
+    // يستمر المؤقّت بالعمل على عدد صفحات لم يعد صحيحاً.
+    if (oldWidget.announcements.length != widget.announcements.length) {
+      _startAutoPlay();
+    }
+  }
+
+  /// تقليب تلقائي بين الإعلانات كل 3 ثوانٍ، بالترتيب، ويرجع للأول بعد
+  /// الأخير — بلا داعٍ لو كان في إعلان واحد بس.
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    if (widget.announcements.length <= 1) return;
+
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!_controller.hasClients) return;
+      final nextPage = (_currentPage + 1) % widget.announcements.length;
+      _controller.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
 
   @override
   void dispose() {
+    _autoPlayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
