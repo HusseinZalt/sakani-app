@@ -245,12 +245,7 @@ class HousingRequestRemoteDataSource {
 
     switch (statusCode) {
       case 400:
-        final body = _tryAsJsonMap(e.response?.data);
-        final message =
-            body?['message'] as String? ??
-            body?['title'] as String? ??
-            'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
-        return HousingRequestException(message);
+        return HousingRequestException(_extract400Message(e.response?.data));
       case 401:
         return const HousingRequestException(
           'تعذّر التحقق من صلاحية الدخول لهذه الخدمة، يرجى تسجيل الدخول مرة أخرى.',
@@ -285,5 +280,66 @@ class HousingRequestRemoteDataSource {
     } catch (_) {
       return null;
     }
+  }
+
+  static const _fieldLabels = <String, String>{
+    'PersonalPhoto': 'الصورة الشخصية',
+    'NationalIdFront': 'الهوية الوطنية (الوجه)',
+    'NationalIdBack': 'الهوية الوطنية (الظهر)',
+    'UniversityIdFront': 'الهوية الجامعية (الوجه)',
+    'UniversityIdBack': 'الهوية الجامعية (الظهر)',
+    'DepartureReceipt': 'إيصال المغادرة',
+    'ResidencyProof': 'سند الإقامة',
+    'Gender': 'الجنس',
+    'GovernorateId': 'المحافظة',
+    'AcademicLevel': 'المستوى الدراسي',
+    'DetailedAddress': 'العنوان التفصيلي',
+    'HasSpecialNeeds': 'الاحتياجات الخاصة',
+    'IsPreviousResident': 'السكن السابق',
+    'PreviousBuildingId': 'رقم المبنى السابق',
+    'PreviousFloor': 'الطابق السابق',
+    'PreviousRoomNumber': 'رقم الغرفة السابقة',
+    'Notes': 'الملاحظات',
+  };
+
+  /// يستخرج رسالة خطأ عربية مفهومة من استجابة 400، بغض النظر عن شكلها:
+  /// إما `ValidationProblemDetails` القياسية بـ ASP.NET Core (حقل
+  /// `errors` بمفتاح لكل حقل غير صالح — مؤكَّد بالاختبار الفعلي هذا هو
+  /// الشكل عند نقص مستند إلزامي)، أو نص خام بسيط بلا JSON إطلاقاً
+  /// (مؤكَّد أيضاً — مثال: `"Governorate was not found."` عند معرّف
+  /// محافظة غير موجود). **قبل هذا الإصلاح كانت كلتا الحالتين تُستبدَلان
+  /// برسالة عامة غير مفيدة تخفي السبب الحقيقي عن المستخدم.**
+  String _extract400Message(dynamic rawData) {
+    final body = _tryAsJsonMap(rawData);
+
+    if (body != null && body['errors'] is Map) {
+      final errors = body['errors'] as Map;
+      final messages = <String>[];
+      errors.forEach((field, value) {
+        final label = _fieldLabels[field.toString()] ?? field.toString();
+        final firstMessage =
+            value is List && value.isNotEmpty ? value.first.toString() : null;
+        if (firstMessage != null &&
+            firstMessage.toLowerCase().contains('required')) {
+          messages.add('$label مطلوب');
+        } else {
+          messages.add(label);
+        }
+      });
+      if (messages.isNotEmpty) return messages.join('، ');
+    }
+
+    final title = body?['title'] as String?;
+    if (title != null &&
+        title.isNotEmpty &&
+        title != 'One or more validation errors occurred.') {
+      return title;
+    }
+
+    if (rawData is String && rawData.trim().isNotEmpty) {
+      return rawData.trim();
+    }
+
+    return 'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
   }
 }
