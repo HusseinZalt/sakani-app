@@ -1,5 +1,4 @@
 import '../../../../core/network/api_result.dart';
-import '../../domain/entities/groups_data.dart';
 import '../../domain/entities/student_group.dart';
 import '../../domain/repositories/groups_repository.dart';
 import '../datasources/groups_remote_data_source.dart';
@@ -13,21 +12,9 @@ class GroupsRepositoryImpl implements GroupsRepository {
   final GroupsRemoteDataSource _remoteDataSource;
 
   @override
-  Future<ApiResult<GroupsData>> fetchGroupsData() async {
+  Future<ApiResult<StudentGroup?>> fetchMyGroup() async {
     try {
-      final data = await _remoteDataSource.fetchGroupsData();
-      return ApiResult.success(data);
-    } on GroupsException catch (e) {
-      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
-    } catch (_) {
-      return ApiResult.failure(ApiFailure.unknown());
-    }
-  }
-
-  @override
-  Future<ApiResult<StudentGroup>> createGroup() async {
-    try {
-      final group = await _remoteDataSource.createGroup();
+      final group = await _remoteDataSource.fetchMyGroup();
       return ApiResult.success(group);
     } on GroupsException catch (e) {
       return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
@@ -37,9 +24,11 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
-  Future<ApiResult<StudentGroup>> joinGroupByCode(String code) async {
+  Future<ApiResult<StudentGroup>> createGroup({String? description}) async {
     try {
-      final group = await _remoteDataSource.joinGroupByCode(code);
+      final group = await _remoteDataSource.createGroup(
+        description: description,
+      );
       return ApiResult.success(group);
     } on GroupsException catch (e) {
       return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
@@ -49,9 +38,9 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
-  Future<ApiResult<void>> inviteMember(String identifier) async {
+  Future<ApiResult<void>> joinGroupByCode(String code) async {
     try {
-      await _remoteDataSource.inviteMember(identifier);
+      await _remoteDataSource.joinGroupByCode(code);
       return ApiResult.success(null);
     } on GroupsException catch (e) {
       return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
@@ -61,21 +50,15 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
-  Future<ApiResult<StudentGroup>> acceptInvite(String inviteId) async {
+  Future<ApiResult<void>> respondToInvitation({
+    required int invitationId,
+    required bool approve,
+  }) async {
     try {
-      final group = await _remoteDataSource.acceptInvite(inviteId);
-      return ApiResult.success(group);
-    } on GroupsException catch (e) {
-      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
-    } catch (_) {
-      return ApiResult.failure(ApiFailure.unknown());
-    }
-  }
-
-  @override
-  Future<ApiResult<void>> declineInvite(String inviteId) async {
-    try {
-      await _remoteDataSource.declineInvite(inviteId);
+      await _remoteDataSource.respondToInvitation(
+        invitationId: invitationId,
+        approve: approve,
+      );
       return ApiResult.success(null);
     } on GroupsException catch (e) {
       return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
@@ -89,18 +72,6 @@ class GroupsRepositoryImpl implements GroupsRepository {
     try {
       await _remoteDataSource.leaveGroup();
       return ApiResult.success(null);
-    } on GroupsException catch (e) {
-      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
-    } catch (_) {
-      return ApiResult.failure(ApiFailure.unknown());
-    }
-  }
-
-  @override
-  Future<ApiResult<StudentGroup>> transferLeadership(String newLeaderId) async {
-    try {
-      final group = await _remoteDataSource.transferLeadership(newLeaderId);
-      return ApiResult.success(group);
     } on GroupsException catch (e) {
       return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
     } catch (_) {

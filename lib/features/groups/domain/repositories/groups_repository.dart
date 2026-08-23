@@ -1,32 +1,27 @@
 import '../../../../core/network/api_result.dart';
-import '../entities/groups_data.dart';
 import '../entities/student_group.dart';
 
 /// عقد (Interface) طبقة الغروبات، تعتمد عليه طبقة الـ Presentation دون
-/// معرفة تفاصيل التنفيذ الفعلية (وهمية حالياً أو عبر API حقيقي مستقبلاً).
+/// معرفة تفاصيل التنفيذ الفعلية.
 abstract class GroupsRepository {
-  /// جلب غروب المستخدم الحالي (إن وُجد) ودعوات الانضمام المعلّقة.
-  Future<ApiResult<GroupsData>> fetchGroupsData();
+  /// جلب غروب المستخدم الحالي، أو null إن لم ينضم لأي غروب.
+  Future<ApiResult<StudentGroup?>> fetchMyGroup();
 
-  /// إنشاء غروب جديد يكون المستخدم الحالي قائداً له.
-  Future<ApiResult<StudentGroup>> createGroup();
+  /// إنشاء غروب جديد يكون المستخدم الحالي قائداً له. يتطلب وجود طلب سكن
+  /// فردي مقدَّم مسبقاً ضمن الدورة الحالية.
+  Future<ApiResult<StudentGroup>> createGroup({String? description});
 
-  /// الانضمام إلى غروب عبر كوده. ينقل المستخدم من غروبه الحالي إن وُجد.
-  Future<ApiResult<StudentGroup>> joinGroupByCode(String code);
+  /// إرسال طلب انضمام لغروب عبر كوده — طلب معلَّق بانتظار موافقة القائد،
+  /// وليس انضماماً فورياً.
+  Future<ApiResult<void>> joinGroupByCode(String code);
 
-  /// دعوة عضو جديد للانضمام إلى غروب المستخدم الحالي عبر بريده/جواله.
-  Future<ApiResult<void>> inviteMember(String identifier);
+  /// الموافقة أو الرفض على طلب انضمام معلَّق (للقائد فقط).
+  Future<ApiResult<void>> respondToInvitation({
+    required int invitationId,
+    required bool approve,
+  });
 
-  /// قبول دعوة انضمام معلّقة.
-  Future<ApiResult<StudentGroup>> acceptInvite(String inviteId);
-
-  /// رفض دعوة انضمام معلّقة.
-  Future<ApiResult<void>> declineInvite(String inviteId);
-
-  /// مغادرة الغروب الحالي. إن كان المستخدم قائداً وهناك أعضاء آخرون، يجب
-  /// نقل القيادة أولاً عبر [transferLeadership].
+  /// مغادرة الغروب الحالي — إن كان المستخدم القائد وبقي أعضاء آخرون، تُنقل
+  /// القيادة تلقائياً لأقدم عضو من جهة الباك إند، دون أي إجراء إضافي هنا.
   Future<ApiResult<void>> leaveGroup();
-
-  /// نقل قيادة الغروب الحالي إلى عضو آخر (متاح فقط للقائد الحالي).
-  Future<ApiResult<StudentGroup>> transferLeadership(String newLeaderId);
 }

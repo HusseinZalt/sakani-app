@@ -1,5 +1,5 @@
 import '../../../../core/network/api_result.dart';
-import '../../domain/entities/groups_data.dart';
+import '../../domain/entities/student_group.dart';
 
 sealed class GroupsState {
   const GroupsState();
@@ -14,9 +14,9 @@ final class GroupsLoading extends GroupsState {
 }
 
 final class GroupsSuccess extends GroupsState {
-  const GroupsSuccess(this.data);
+  const GroupsSuccess(this.myGroup);
 
-  final GroupsData data;
+  final StudentGroup? myGroup;
 }
 
 final class GroupsFailure extends GroupsState {

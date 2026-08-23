@@ -1,20 +1,21 @@
-import '../../domain/entities/group_invite.dart';
-import '../../domain/entities/group_member.dart';
-import '../../domain/entities/groups_data.dart';
+import '../../../../core/utils/parse_utc_date_time.dart';
+import '../../domain/entities/group_invitation.dart';
 import '../../domain/entities/student_group.dart';
 
-class GroupMemberModel extends GroupMember {
-  const GroupMemberModel({
+class GroupInvitationModel extends GroupInvitation {
+  const GroupInvitationModel({
     required super.id,
-    required super.name,
-    required super.isLeader,
+    required super.invitedStudentId,
+    required super.status,
+    required super.sentAt,
   });
 
-  factory GroupMemberModel.fromJson(Map<String, dynamic> json) {
-    return GroupMemberModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      isLeader: json['isLeader'] as bool,
+  factory GroupInvitationModel.fromJson(Map<String, dynamic> json) {
+    return GroupInvitationModel(
+      id: json['id'] as int,
+      invitedStudentId: json['invitedStudentId'] as String? ?? '',
+      status: InvitationStatus.fromApiValue(json['status'] as int? ?? 0),
+      sentAt: parseUtcDateTime(json['sentAt'] as String),
     );
   }
 }
@@ -23,41 +24,32 @@ class StudentGroupModel extends StudentGroup {
   const StudentGroupModel({
     required super.id,
     required super.code,
+    required super.leaderId,
     required super.maxMembers,
-    required super.members,
+    required super.memberStudentIds,
+    required super.status,
+    super.description,
+    super.pendingInvitations,
   });
 
+  /// يحوّل عنصر `HousingGroupDto` من خدمة السكن الحقيقية (ASP.NET Core،
+  /// راجع `HousingService_Guide.md`) إلى نموذج التطبيق.
   factory StudentGroupModel.fromJson(Map<String, dynamic> json) {
     return StudentGroupModel(
-      id: json['id'] as String,
-      code: json['code'] as String,
-      maxMembers: json['maxMembers'] as int,
-      members:
-          (json['members'] as List)
-              .map((e) => GroupMemberModel.fromJson(e as Map<String, dynamic>))
-              .toList(),
+      id: json['id'] as int,
+      code: json['code'] as String? ?? '',
+      leaderId: json['leaderId'] as String? ?? '',
+      maxMembers: json['maxMembers'] as int? ?? 4,
+      memberStudentIds:
+          (json['memberStudentIds'] as List?)?.cast<String>() ?? const [],
+      status: HousingGroupStatus.fromApiValue(json['status'] as int? ?? 0),
+      description: json['description'] as String?,
+      pendingInvitations:
+          (json['pendingInvitations'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(GroupInvitationModel.fromJson)
+              .toList() ??
+          const [],
     );
   }
-}
-
-class GroupInviteModel extends GroupInvite {
-  const GroupInviteModel({
-    required super.id,
-    required super.groupId,
-    required super.groupLabel,
-    required super.fromUserName,
-  });
-
-  factory GroupInviteModel.fromJson(Map<String, dynamic> json) {
-    return GroupInviteModel(
-      id: json['id'] as String,
-      groupId: json['groupId'] as String,
-      groupLabel: json['groupLabel'] as String,
-      fromUserName: json['fromUserName'] as String,
-    );
-  }
-}
-
-class GroupsDataModel extends GroupsData {
-  const GroupsDataModel({required super.myGroup, required super.invites});
 }
