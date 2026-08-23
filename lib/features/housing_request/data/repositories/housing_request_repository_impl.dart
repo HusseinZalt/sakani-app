@@ -1,4 +1,6 @@
 import '../../../../core/network/api_result.dart';
+import '../../domain/entities/governorate.dart';
+import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../../domain/repositories/housing_request_repository.dart';
@@ -12,10 +14,36 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
   final HousingRequestRemoteDataSource _remoteDataSource;
 
   @override
+  Future<ApiResult<HousingCycle?>> fetchCurrentCycle() async {
+    try {
+      final cycle = await _remoteDataSource.fetchCurrentCycle();
+      return ApiResult.success(cycle);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
+
+  @override
+  Future<ApiResult<List<Governorate>>> fetchGovernorates() async {
+    try {
+      final governorates = await _remoteDataSource.fetchGovernorates();
+      return ApiResult.success(governorates);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
+
+  @override
   Future<ApiResult<HousingRequest?>> fetchMyRequest() async {
     try {
       final request = await _remoteDataSource.fetchMyRequest();
       return ApiResult.success(request);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
     } catch (_) {
       return ApiResult.failure(ApiFailure.unknown());
     }
@@ -23,21 +51,69 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
 
   @override
   Future<ApiResult<HousingRequest>> submitRequest({
-    required String requestType,
-    required String roomType,
-    required String preferredBuilding,
-    String? groupCode,
-    List<HousingDocument> documents = const [],
-    String? notes,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> documents,
   }) async {
     try {
       final request = await _remoteDataSource.submitRequest(
-        requestType: requestType,
-        roomType: roomType,
-        preferredBuilding: preferredBuilding,
-        groupCode: groupCode,
+        gender: gender,
+        governorateId: governorateId,
+        academicLevel: academicLevel,
+        detailedAddress: detailedAddress,
+        hasSpecialNeeds: hasSpecialNeeds,
+        isPreviousResident: isPreviousResident,
+        previousBuildingId: previousBuildingId,
+        previousFloor: previousFloor,
+        previousRoomNumber: previousRoomNumber,
+        specialNotes: specialNotes,
         documents: documents,
-        notes: notes,
+      );
+      return ApiResult.success(request);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
+
+  @override
+  Future<ApiResult<HousingRequest>> updateRequest({
+    required int requestId,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> replacedDocuments,
+  }) async {
+    try {
+      final request = await _remoteDataSource.updateRequest(
+        requestId: requestId,
+        gender: gender,
+        governorateId: governorateId,
+        academicLevel: academicLevel,
+        detailedAddress: detailedAddress,
+        hasSpecialNeeds: hasSpecialNeeds,
+        isPreviousResident: isPreviousResident,
+        previousBuildingId: previousBuildingId,
+        previousFloor: previousFloor,
+        previousRoomNumber: previousRoomNumber,
+        specialNotes: specialNotes,
+        replacedDocuments: replacedDocuments,
       );
       return ApiResult.success(request);
     } on HousingRequestException catch (e) {

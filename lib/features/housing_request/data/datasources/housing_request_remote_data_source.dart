@@ -1,5 +1,9 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+
+import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
-import '../../../../core/session/mock_current_user.dart';
 import '../../domain/entities/housing_document.dart';
 import '../models/housing_request_model.dart';
 
@@ -14,81 +18,272 @@ class HousingRequestException implements Exception {
   final ApiErrorType type;
 }
 
-/// مصدر بيانات طلب السكن.
+/// مصدر بيانات طلب السكن — يستدعي خدمة السكن الحقيقية (ASP.NET Core على
+/// `housingservice001.runasp.net`، راجع `HousingService_Guide.md`).
 ///
-/// ==================================================================
-/// **نقطة الربط مع الباك إند:** هذا التنفيذ وهمي بالكامل حالياً (بيانات
-/// مشتركة (static) في الذاكرة + محاكاة زمن استجابة الشبكة). عند الربط
-/// الحقيقي، يكفي استبدال محتوى هذا الملف بطلبات HTTP فعلية دون أي تعديل
-/// على الـ Repository أو الـ Cubit أو الشاشة.
-/// ==================================================================
+/// **مؤكَّد بالاختبار الفعلي (2026-08-23):** نقاط `/mine` (طلب السكن،
+/// الغروبات، التخصيص) كانت تُرجع 403 لكل حسابات الطلاب بسبب عدم تطابق
+/// قيمة الدور بالتوكن (`student` من خدمة المصادقة) مع الدور المتوقَّع
+/// (`user`) — تم إصلاحه من جهة الباك إند.
 class HousingRequestRemoteDataSource {
-  static const _networkDelay = Duration(milliseconds: 800);
-  static const _placeholderUserId = 'usr_1001';
-  static const _placeholderUserName = 'أحمد محمد';
+  HousingRequestRemoteDataSource({Dio? dio}) : _dio = dio ?? ApiClient.housing.dio;
 
-  static String? _currentUserId;
+  final Dio _dio;
 
-  /// طلب سكن واحد على الأكثر لكل مستخدم، بمفتاح معرّف المستخدم — بدل حقل
-  /// وحيد مشترك بين كل من يستخدم التطبيق على نفس الجهاز.
-  static final Map<String, HousingRequestModel> _requestsByUser = {};
-
-  Future<void> _ensureCurrentUser() async {
-    if (_currentUserId != null) return;
-    final resolved = await MockCurrentUser.resolve(
-      placeholderId: _placeholderUserId,
-      placeholderName: _placeholderUserName,
-    );
-    _currentUserId = resolved.id;
+  /// دورة السكن المفتوحة حالياً، أو null إن لم توجد (404).
+  Future<HousingCycleModel?> fetchCurrentCycle() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/housing-cycles/current');
+      return HousingCycleModel.fromJson(_asJsonMap(response.data));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      throw _mapDioException(e);
+    }
   }
 
+  Future<List<GovernorateModel>> fetchGovernorates() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/governorates');
+      final items = _asJsonList(response.data);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(GovernorateModel.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// طلب سكن واحد على الأكثر عادةً لكل طالب بكل دورة — نأخذ أول عنصر إن
+  /// وُجد (`GET /api/housing-requests/mine` تُرجع مصفوفة).
   Future<HousingRequestModel?> fetchMyRequest() async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
-    return _requestsByUser[_currentUserId];
+    try {
+      final response = await _dio.get<dynamic>('/api/housing-requests/mine');
+      final items = _asJsonList(response.data);
+      final maps = items.whereType<Map<String, dynamic>>().toList();
+      if (maps.isEmpty) return null;
+      return HousingRequestModel.fromJson(maps.first);
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
   }
 
   Future<HousingRequestModel> submitRequest({
-    required String requestType,
-    required String roomType,
-    required String preferredBuilding,
-    String? groupCode,
-    List<HousingDocument> documents = const [],
-    String? notes,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> documents,
   }) async {
-    await _ensureCurrentUser();
-    await Future.delayed(_networkDelay);
+    try {
+      final formData = _buildFormData(
+        gender: gender,
+        governorateId: governorateId,
+        academicLevel: academicLevel,
+        detailedAddress: detailedAddress,
+        hasSpecialNeeds: hasSpecialNeeds,
+        isPreviousResident: isPreviousResident,
+        previousBuildingId: previousBuildingId,
+        previousFloor: previousFloor,
+        previousRoomNumber: previousRoomNumber,
+        specialNotes: specialNotes,
+        documents: documents,
+      );
+      final response = await _dio.post<dynamic>(
+        '/api/housing-requests',
+        data: formData,
+      );
+      return HousingRequestModel.fromJson(_asJsonMap(response.data));
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
 
-    if (_requestsByUser.containsKey(_currentUserId)) {
-      throw const HousingRequestException(
-        'لديك طلب سكن مقدَّم بالفعل قيد المعالجة.',
+  /// تعديل طلب بحالة `NeedsRevision` — أرسل فقط المستندات المُستبدَلة
+  /// (`replacedDocuments`)، وليس كل المستندات الخمسة/السبعة من جديد.
+  Future<HousingRequestModel> updateRequest({
+    required int requestId,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> replacedDocuments,
+  }) async {
+    try {
+      final formData = _buildFormData(
+        gender: gender,
+        governorateId: governorateId,
+        academicLevel: academicLevel,
+        detailedAddress: detailedAddress,
+        hasSpecialNeeds: hasSpecialNeeds,
+        isPreviousResident: isPreviousResident,
+        previousBuildingId: previousBuildingId,
+        previousFloor: previousFloor,
+        previousRoomNumber: previousRoomNumber,
+        specialNotes: specialNotes,
+        documents: replacedDocuments,
       );
-    }
-    if (requestType == 'group' && (groupCode == null || groupCode.isEmpty)) {
-      throw const HousingRequestException(
-        'يجب الانضمام إلى غروب أو إنشاء واحد أولاً لتقديم طلب كغروب.',
+      final response = await _dio.put<dynamic>(
+        '/api/housing-requests/mine/$requestId',
+        data: formData,
       );
+      return HousingRequestModel.fromJson(_asJsonMap(response.data));
+    } on DioException catch (e) {
+      throw _mapDioException(e);
     }
-    if (documents.isEmpty) {
-      throw const HousingRequestException(
-        'يرجى إرفاق المستندات الداعمة المطلوبة قبل الإرسال.',
+  }
+
+  FormData _buildFormData({
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> documents,
+  }) {
+    final map = <String, dynamic>{
+      'Gender': gender,
+      'GovernorateId': governorateId,
+      'AcademicLevel': academicLevel,
+      'DetailedAddress': detailedAddress,
+      'HasSpecialNeeds': hasSpecialNeeds,
+      'IsPreviousResident': isPreviousResident,
+      if (isPreviousResident && previousBuildingId != null)
+        'PreviousBuildingId': previousBuildingId,
+      if (isPreviousResident && previousFloor != null)
+        'PreviousFloor': previousFloor,
+      if (isPreviousResident &&
+          previousRoomNumber != null &&
+          previousRoomNumber.isNotEmpty)
+        'PreviousRoomNumber': previousRoomNumber,
+      if (specialNotes != null && specialNotes.isNotEmpty)
+        'Notes': specialNotes,
+    };
+
+    for (final document in documents) {
+      final bytes = document.bytes;
+      if (bytes == null) continue;
+      final field = _documentFieldName(document.type);
+      map[field] = MultipartFile.fromBytes(
+        bytes,
+        filename: document.fileName ?? '$field.jpg',
       );
     }
 
-    final request = HousingRequestModel(
-      id: 'hrq_${DateTime.now().millisecondsSinceEpoch}',
-      userId: _currentUserId!,
-      requestType: requestType,
-      roomType: roomType,
-      preferredBuilding: preferredBuilding,
-      status: 'pending',
-      createdAt: DateTime.now(),
-      groupCode: requestType == 'group' ? groupCode : null,
-      documents: documents,
-      notes: (notes == null || notes.trim().isEmpty) ? null : notes.trim(),
+    return FormData.fromMap(map);
+  }
+
+  static String _documentFieldName(HousingDocumentType type) {
+    return switch (type) {
+      HousingDocumentType.personalPhoto => 'PersonalPhoto',
+      HousingDocumentType.nationalIdFront => 'NationalIdFront',
+      HousingDocumentType.nationalIdBack => 'NationalIdBack',
+      HousingDocumentType.universityIdFront => 'UniversityIdFront',
+      HousingDocumentType.universityIdBack => 'UniversityIdBack',
+      HousingDocumentType.departureReceipt => 'DepartureReceipt',
+      HousingDocumentType.residencyProof => 'ResidencyProof',
+    };
+  }
+
+  Map<String, dynamic> _asJsonMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String && data.isNotEmpty) {
+      final decoded = jsonDecode(data);
+      if (decoded is Map<String, dynamic>) return decoded;
+    }
+    throw const HousingRequestException(
+      'تعذّر قراءة استجابة الخادم، يرجى المحاولة مرة أخرى.',
+      type: ApiErrorType.parsing,
     );
+  }
 
-    _requestsByUser[_currentUserId!] = request;
-    return request;
+  List<dynamic> _asJsonList(dynamic data) {
+    if (data is List) return data;
+    if (data is String && data.isNotEmpty) {
+      final decoded = jsonDecode(data);
+      if (decoded is List) return decoded;
+    }
+    return const [];
+  }
+
+  HousingRequestException _mapDioException(DioException e) {
+    final statusCode = e.response?.statusCode;
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return const HousingRequestException(
+          'استغرق الاتصال بالخادم وقتاً أطول من المتوقع، حاول مرة أخرى.',
+          type: ApiErrorType.timeout,
+        );
+      case DioExceptionType.connectionError:
+        return const HousingRequestException(
+          'تعذر الاتصال بالخادم، يرجى التحقق من اتصالك بالإنترنت.',
+          type: ApiErrorType.network,
+        );
+      default:
+        break;
+    }
+
+    switch (statusCode) {
+      case 400:
+        final body = _tryAsJsonMap(e.response?.data);
+        final message =
+            body?['message'] as String? ??
+            body?['title'] as String? ??
+            'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
+        return HousingRequestException(message);
+      case 401:
+        return const HousingRequestException(
+          'تعذّر التحقق من صلاحية الدخول لهذه الخدمة، يرجى تسجيل الدخول مرة أخرى.',
+          type: ApiErrorType.unauthorized,
+        );
+      case 403:
+        return const HousingRequestException(
+          'لا تملك صلاحية الوصول لهذه الخدمة حالياً.',
+          type: ApiErrorType.forbidden,
+        );
+      case 404:
+        return const HousingRequestException(
+          'لم يتم العثور على المطلوب.',
+          type: ApiErrorType.notFound,
+        );
+      default:
+        if (statusCode != null && statusCode >= 500) {
+          return const HousingRequestException(
+            'حدث خطأ في الخادم، يرجى المحاولة لاحقاً.',
+            type: ApiErrorType.server,
+          );
+        }
+        return const HousingRequestException(
+          'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.',
+        );
+    }
+  }
+
+  Map<String, dynamic>? _tryAsJsonMap(dynamic data) {
+    try {
+      return _asJsonMap(data);
+    } catch (_) {
+      return null;
+    }
   }
 }

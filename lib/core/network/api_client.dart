@@ -113,12 +113,16 @@ class ApiClient {
   /// خدمة الإعلانات — الإعلانات الإدارية المعروضة بالرئيسية.
   static const String adsBaseUrl = gatewayBaseUrl;
 
+  /// خدمة السكن — طلبات السكن، الغروبات، التخصيص.
+  static const String housingBaseUrl = gatewayBaseUrl;
+
   /// للتوافق مع الاستخدام الحالي في طبقة المصادقة — نفس [auth].
   static final ApiClient instance = ApiClient._(authBaseUrl);
 
   static final ApiClient auth = instance;
   static final ApiClient feedback = ApiClient._(feedbackBaseUrl);
   static final ApiClient notifications = ApiClient._(notificationsBaseUrl);
+  static final ApiClient housing = ApiClient._(housingBaseUrl);
   static final ApiClient ads = ApiClient._(adsBaseUrl);
 
   final String baseUrl;

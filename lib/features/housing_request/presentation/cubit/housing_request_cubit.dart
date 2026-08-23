@@ -1,64 +1,124 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_result.dart';
-import '../../../groups/domain/entities/groups_data.dart';
-import '../../../groups/domain/repositories/groups_repository.dart';
+import '../../domain/entities/governorate.dart';
+import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../../domain/repositories/housing_request_repository.dart';
 import 'housing_request_state.dart';
 
-/// يدير حالة شاشة طلب السكن عبر [HousingRequestRepository]، دون معرفة ما
-/// إذا كانت البيانات وهمية حالياً أو قادمة من API حقيقي مستقبلاً.
+/// يدير حالة شاشة طلب السكن عبر [HousingRequestRepository].
 ///
-/// يعتمد أيضاً على [GroupsRepository] لمعرفة غروب المستخدم الحالي (إن
-/// وُجد)، اللازم لتفعيل وربط خيار "طلب كغروب".
+/// التسلسل عند التحميل: تحقّق من وجود دورة سكن مفتوحة أولاً — إن لم توجد
+/// فلا معنى لعرض نموذج تقديم أصلاً (`HousingRequestCycleClosed`)، بغض
+/// النظر إن كان للطالب طلب قديم أو لا.
 class HousingRequestCubit extends Cubit<HousingRequestState> {
-  HousingRequestCubit(this._repository, this._groupsRepository)
-    : super(const HousingRequestLoading());
+  HousingRequestCubit(this._repository) : super(const HousingRequestLoading());
 
   final HousingRequestRepository _repository;
-  final GroupsRepository _groupsRepository;
 
   Future<void> fetchMyRequest() async {
     emit(const HousingRequestLoading());
 
-    final result = await _repository.fetchMyRequest();
+    final cycleResult = await _repository.fetchCurrentCycle();
+    final HousingCycle? cycle;
+    switch (cycleResult) {
+      case ApiSuccess<HousingCycle?>(:final data):
+        cycle = data;
+      case ApiFailureResult<HousingCycle?>(:final failure):
+        emit(HousingRequestFailure(failure));
+        return;
+    }
+    if (cycle == null || !cycle.isOpen) {
+      emit(const HousingRequestCycleClosed());
+      return;
+    }
 
-    switch (result) {
+    final requestResult = await _repository.fetchMyRequest();
+    switch (requestResult) {
       case ApiSuccess<HousingRequest?>(:final data):
         if (data != null) {
           emit(HousingRequestSubmitted(data));
           return;
         }
-        final groupsResult = await _groupsRepository.fetchGroupsData();
-        final myGroup = switch (groupsResult) {
-          ApiSuccess<GroupsData>(:final data) => data.myGroup,
-          ApiFailureResult<GroupsData>() => null,
+        final governoratesResult = await _repository.fetchGovernorates();
+        final governorates = switch (governoratesResult) {
+          ApiSuccess<List<Governorate>>(:final data) => data,
+          ApiFailureResult<List<Governorate>>() => const <Governorate>[],
         };
-        emit(HousingRequestEmpty(myGroup: myGroup));
+        emit(HousingRequestEmpty(governorates: governorates));
       case ApiFailureResult<HousingRequest?>(:final failure):
         emit(HousingRequestFailure(failure));
     }
   }
 
   Future<void> submitRequest({
-    required String requestType,
-    required String roomType,
-    required String preferredBuilding,
-    String? groupCode,
-    List<HousingDocument> documents = const [],
-    String? notes,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> documents,
   }) async {
     emit(const HousingRequestSubmitting());
 
     final result = await _repository.submitRequest(
-      requestType: requestType,
-      roomType: roomType,
-      preferredBuilding: preferredBuilding,
-      groupCode: groupCode,
+      gender: gender,
+      governorateId: governorateId,
+      academicLevel: academicLevel,
+      detailedAddress: detailedAddress,
+      hasSpecialNeeds: hasSpecialNeeds,
+      isPreviousResident: isPreviousResident,
+      previousBuildingId: previousBuildingId,
+      previousFloor: previousFloor,
+      previousRoomNumber: previousRoomNumber,
+      specialNotes: specialNotes,
       documents: documents,
-      notes: notes,
+    );
+
+    switch (result) {
+      case ApiSuccess<HousingRequest>(:final data):
+        emit(HousingRequestSubmitted(data));
+      case ApiFailureResult<HousingRequest>(:final failure):
+        emit(HousingRequestFailure(failure));
+    }
+  }
+
+  Future<void> updateRequest({
+    required int requestId,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> replacedDocuments,
+  }) async {
+    emit(const HousingRequestSubmitting());
+
+    final result = await _repository.updateRequest(
+      requestId: requestId,
+      gender: gender,
+      governorateId: governorateId,
+      academicLevel: academicLevel,
+      detailedAddress: detailedAddress,
+      hasSpecialNeeds: hasSpecialNeeds,
+      isPreviousResident: isPreviousResident,
+      previousBuildingId: previousBuildingId,
+      previousFloor: previousFloor,
+      previousRoomNumber: previousRoomNumber,
+      specialNotes: specialNotes,
+      replacedDocuments: replacedDocuments,
     );
 
     switch (result) {

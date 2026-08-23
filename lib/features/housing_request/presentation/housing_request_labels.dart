@@ -1,35 +1,20 @@
-/// تسميات طلب السكن بالعربية.
+/// تسميات إضافية لطلب السكن بالعربية — الحالات الأساسية (الطلب، المستند،
+/// القرار) لها تسمية جاهزة عبر enum.label الخاص بكل منها بالكيانات نفسها.
 class HousingRequestLabels {
   const HousingRequestLabels._();
 
-  static const Map<String, String> requestTypes = {
-    'individual': 'طلب فردي',
-    'group': 'طلب كغروب',
+  static const Map<int, String> academicLevels = {
+    1: 'السنة الأولى',
+    2: 'السنة الثانية',
+    3: 'السنة الثالثة',
+    4: 'السنة الرابعة',
+    5: 'السنة الخامسة',
   };
 
-  static const Map<String, String> roomTypes = {
-    'shared': 'غرفة مشتركة',
-    'private': 'غرفة فردية',
-  };
+  static const Map<int, String> genders = {0: 'ذكر', 1: 'أنثى', 2: 'مختلط'};
 
-  static const Map<String, String> buildings = {
-    'unit_a': 'الوحدة أ',
-    'unit_b': 'الوحدة ب',
-    'unit_c': 'الوحدة ج',
-    'none': 'بدون تفضيل',
-  };
+  static String academicLevelLabel(int level) =>
+      academicLevels[level] ?? 'السنة $level';
 
-  static const Map<String, String> statuses = {
-    'pending': 'قيد المراجعة',
-    'accepted': 'مقبول',
-    'rejected': 'مرفوض',
-  };
-
-  static String requestTypeLabel(String key) => requestTypes[key] ?? key;
-
-  static String roomTypeLabel(String key) => roomTypes[key] ?? key;
-
-  static String buildingLabel(String key) => buildings[key] ?? key;
-
-  static String statusLabel(String key) => statuses[key] ?? key;
+  static String genderLabel(int gender) => genders[gender] ?? '—';
 }

@@ -1,20 +1,49 @@
 import '../../../../core/network/api_result.dart';
+import '../entities/governorate.dart';
+import '../entities/housing_cycle.dart';
 import '../entities/housing_document.dart';
 import '../entities/housing_request.dart';
 
 /// عقد (Interface) طبقة طلب السكن، تعتمد عليه طبقة الـ Presentation دون
-/// معرفة تفاصيل التنفيذ الفعلية (وهمية حالياً أو عبر API حقيقي مستقبلاً).
+/// معرفة تفاصيل التنفيذ الفعلية.
 abstract class HousingRequestRepository {
+  /// دورة السكن المفتوحة حالياً، أو null إن لم توجد دورة مفتوحة بالنظام.
+  Future<ApiResult<HousingCycle?>> fetchCurrentCycle();
+
+  /// قائمة المحافظات لملء نموذج التقديم.
+  Future<ApiResult<List<Governorate>>> fetchGovernorates();
+
   /// جلب طلب السكن الحالي للطالب، أو null إن لم يقدَّم طلب بعد.
   Future<ApiResult<HousingRequest?>> fetchMyRequest();
 
   /// تقديم طلب سكن جديد.
   Future<ApiResult<HousingRequest>> submitRequest({
-    required String requestType,
-    required String roomType,
-    required String preferredBuilding,
-    String? groupCode,
-    List<HousingDocument> documents,
-    String? notes,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> documents,
+  });
+
+  /// تعديل طلب بحالة `NeedsRevision` — يرسل فقط المستندات المُستبدَلة.
+  Future<ApiResult<HousingRequest>> updateRequest({
+    required int requestId,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> replacedDocuments,
   });
 }

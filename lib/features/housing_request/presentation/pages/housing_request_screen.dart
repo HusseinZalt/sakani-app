@@ -4,24 +4,23 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
+import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/custom_chip.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/gradient_header.dart';
-import '../../../groups/data/repositories/groups_repository_impl.dart';
-import '../../../groups/domain/entities/student_group.dart';
 import '../../data/repositories/housing_request_repository_impl.dart';
+import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../cubit/housing_request_cubit.dart';
 import '../cubit/housing_request_state.dart';
 import '../housing_request_labels.dart';
 
-/// شاشة طلب السكن الجامعي: نموذج تقديم الطلب (نوع الطلب، نوع الغرفة،
-/// المبنى المفضل، المستندات الداعمة، ملاحظات) قبل التقديم، ومتابعة حالته
-/// (الإرسال/المراجعة/القرار) بعد التقديم — مطابقة للشاشة 4 من التصميم
-/// المعتمد.
+/// شاشة طلب السكن الجامعي: نموذج تقديم الطلب الحقيقي (المحافظة، المستوى
+/// الدراسي، العنوان التفصيلي، المستندات السبعة المحدَّدة...) قبل التقديم،
+/// ومتابعة حالته (المراجعة/يحتاج تعديل/القرار) بعد التقديم.
 class HousingRequestScreen extends StatelessWidget {
   const HousingRequestScreen({super.key});
 
@@ -29,146 +28,15 @@ class HousingRequestScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create:
-          (_) => HousingRequestCubit(
-            HousingRequestRepositoryImpl(),
-            GroupsRepositoryImpl(),
-          )..fetchMyRequest(),
+          (_) => HousingRequestCubit(HousingRequestRepositoryImpl())
+            ..fetchMyRequest(),
       child: const _HousingRequestView(),
     );
   }
 }
 
-class _HousingRequestView extends StatefulWidget {
+class _HousingRequestView extends StatelessWidget {
   const _HousingRequestView();
-
-  @override
-  State<_HousingRequestView> createState() => _HousingRequestViewState();
-}
-
-class _HousingRequestViewState extends State<_HousingRequestView> {
-  final _imagePicker = ImagePicker();
-
-  String _requestType = 'individual';
-  String _roomType = 'shared';
-  String _building = 'unit_a';
-  final List<HousingDocument> _documents = [];
-  StudentGroup? _myGroup;
-  final _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _addDocument(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_camera_outlined,
-                  color: AppColors.primary,
-                ),
-                title: const Text('التقاط صورة بالكاميرا'),
-                onTap: () async {
-                  await _pickDocument(ImageSource.camera);
-                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library_outlined,
-                  color: AppColors.primary,
-                ),
-                title: const Text('اختيار من المعرض'),
-                onTap: () async {
-                  await _pickDocument(ImageSource.gallery);
-                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _pickDocument(ImageSource source) async {
-    try {
-      final file = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      setState(
-        () => _documents.add(HousingDocument(name: file.name, bytes: bytes)),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('تعذر إرفاق المستند، يرجى المحاولة مرة أخرى.'),
-          ),
-        );
-    }
-  }
-
-  void _removeDocument(int index) {
-    setState(() => _documents.removeAt(index));
-  }
-
-  void _submit(BuildContext context) {
-    if (_requestType == 'group' && _myGroup == null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'يجب الانضمام إلى غروب أو إنشاء واحد أولاً لتقديم طلب كغروب.',
-            ),
-          ),
-        );
-      return;
-    }
-    if (_documents.isEmpty) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'يرجى إرفاق المستندات الداعمة المطلوبة (مثل سند الإقامة).',
-            ),
-          ),
-        );
-      return;
-    }
-
-    context.read<HousingRequestCubit>().submitRequest(
-      requestType: _requestType,
-      roomType: _roomType,
-      preferredBuilding: _building,
-      groupCode: _myGroup?.code,
-      documents: List.unmodifiable(_documents),
-      notes: _notesController.text,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,8 +45,8 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
       body: Column(
         children: [
           const GradientHeader(
-            title: 'تقديم طلب سكن',
-            subtitle: 'أكمل بياناتك لتقديم طلب سكن جديد',
+            title: 'طلب السكن',
+            subtitle: 'تقديم ومتابعة طلب السكن الجامعي',
           ),
           Expanded(
             child: BlocConsumer<HousingRequestCubit, HousingRequestState>(
@@ -189,9 +57,6 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
                     ..showSnackBar(
                       SnackBar(content: Text(state.failure.message)),
                     );
-                }
-                if (state is HousingRequestEmpty) {
-                  setState(() => _myGroup = state.myGroup);
                 }
               },
               builder: (context, state) {
@@ -209,28 +74,20 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
                       child: const Text('إعادة المحاولة'),
                     ),
                   ),
-                  HousingRequestSubmitted(:final request) => _SubmittedView(
-                    request: request,
+                  HousingRequestCycleClosed() => const _CycleClosedView(),
+                  HousingRequestEmpty(:final governorates) => _RequestFormView(
+                    governorates: governorates,
                   ),
-                  HousingRequestEmpty() ||
-                  HousingRequestSubmitting() => _RequestForm(
-                    requestType: _requestType,
-                    roomType: _roomType,
-                    building: _building,
-                    documents: _documents,
-                    myGroup: _myGroup,
-                    notesController: _notesController,
-                    isSubmitting: state is HousingRequestSubmitting,
-                    onRequestTypeChanged:
-                        (value) => setState(() => _requestType = value),
-                    onRoomTypeChanged:
-                        (value) => setState(() => _roomType = value),
-                    onBuildingChanged:
-                        (value) => setState(() => _building = value),
-                    onAddDocument: () => _addDocument(context),
-                    onRemoveDocument: _removeDocument,
-                    onSubmit: () => _submit(context),
+                  HousingRequestSubmitting() => const Center(
+                    child: CircularProgressIndicator(),
                   ),
+                  HousingRequestSubmitted(:final request, :final governorates) =>
+                    request.status == HousingRequestStatus.needsRevision
+                        ? _RequestFormView(
+                          governorates: governorates,
+                          existingRequest: request,
+                        )
+                        : _StatusView(request: request),
                 };
               },
             ),
@@ -241,297 +98,479 @@ class _HousingRequestViewState extends State<_HousingRequestView> {
   }
 }
 
-class _RequestForm extends StatelessWidget {
-  const _RequestForm({
-    required this.requestType,
-    required this.roomType,
-    required this.building,
-    required this.documents,
-    required this.myGroup,
-    required this.notesController,
-    required this.isSubmitting,
-    required this.onRequestTypeChanged,
-    required this.onRoomTypeChanged,
-    required this.onBuildingChanged,
-    required this.onAddDocument,
-    required this.onRemoveDocument,
-    required this.onSubmit,
-  });
+class _CycleClosedView extends StatelessWidget {
+  const _CycleClosedView();
 
-  final String requestType;
-  final String roomType;
-  final String building;
-  final List<HousingDocument> documents;
-  final StudentGroup? myGroup;
-  final TextEditingController notesController;
-  final bool isSubmitting;
-  final ValueChanged<String> onRequestTypeChanged;
-  final ValueChanged<String> onRoomTypeChanged;
-  final ValueChanged<String> onBuildingChanged;
-  final VoidCallback onAddDocument;
-  final ValueChanged<int> onRemoveDocument;
-  final VoidCallback onSubmit;
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.event_busy_rounded,
+              size: 48,
+              color: AppColors.textHint,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'التقديم لطلبات السكن مغلق حالياً',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'ستُفتَح دورة سكن جديدة قريباً، تابع الإشعارات.',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// نموذج تقديم/تعديل الطلب — نفس النموذج يُستخدم للحالتين: [existingRequest]
+/// null لطلب جديد، أو معبَّأ مسبقاً لتعديل طلب بحالة `NeedsRevision`.
+class _RequestFormView extends StatefulWidget {
+  const _RequestFormView({required this.governorates, this.existingRequest});
+
+  final List<Governorate> governorates;
+  final HousingRequest? existingRequest;
+
+  @override
+  State<_RequestFormView> createState() => _RequestFormViewState();
+}
+
+class _RequestFormViewState extends State<_RequestFormView> {
+  final _imagePicker = ImagePicker();
+  final _addressController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _previousFloorController = TextEditingController();
+  final _previousRoomController = TextEditingController();
+  final _previousBuildingIdController = TextEditingController();
+
+  int? _governorateId;
+  int _academicLevel = 1;
+  bool _hasSpecialNeeds = false;
+  bool _isPreviousResident = false;
+  final Map<HousingDocumentType, HousingDocument> _documents = {};
+
+  bool get _isEditMode => widget.existingRequest != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existingRequest;
+    if (existing != null) {
+      _governorateId = existing.governorateId;
+      _academicLevel = existing.academicLevel;
+      _addressController.text = existing.detailedAddress;
+      _notesController.text = existing.specialNotes ?? '';
+      _hasSpecialNeeds = existing.hasSpecialNeeds;
+      _isPreviousResident = existing.isPreviousResident;
+      _previousFloorController.text = existing.previousFloor?.toString() ?? '';
+      _previousRoomController.text = existing.previousRoomNumber ?? '';
+      _previousBuildingIdController.text =
+          existing.previousBuildingId?.toString() ?? '';
+      for (final doc in existing.documents) {
+        _documents[doc.type] = doc;
+      }
+    } else {
+      final gender = context.read<UserSessionCubit>().state?.gender;
+      // لا حقل جنس بالنموذج — يُشتق تلقائياً من حساب الطالب نفسه.
+      _prefilledGender = switch (gender) {
+        'female' => 1,
+        _ => 0,
+      };
+    }
+  }
+
+  int _prefilledGender = 0;
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _notesController.dispose();
+    _previousFloorController.dispose();
+    _previousRoomController.dispose();
+    _previousBuildingIdController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDocument(HousingDocumentType type) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_camera_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('التقاط صورة بالكاميرا'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _pickFrom(type, ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('اختيار من المعرض'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _pickFrom(type, ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickFrom(HousingDocumentType type, ImageSource source) async {
+    try {
+      final file = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _documents[type] = HousingDocument(
+          type: type,
+          bytes: bytes,
+          fileName: file.name,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('تعذر إرفاق المستند، يرجى المحاولة مرة أخرى.'),
+          ),
+        );
+    }
+  }
+
+  void _submit() {
+    if (_governorateId == null) {
+      _showMessage('يرجى اختيار المحافظة.');
+      return;
+    }
+    if (_addressController.text.trim().isEmpty) {
+      _showMessage('يرجى إدخال العنوان التفصيلي.');
+      return;
+    }
+    final missingMandatory = HousingDocumentType.values.where(
+      (type) => type.mandatory && !_documents.containsKey(type),
+    );
+    if (missingMandatory.isNotEmpty) {
+      _showMessage(
+        'يرجى إرفاق كل المستندات الإلزامية: ${missingMandatory.map((t) => t.label).join('، ')}.',
+      );
+      return;
+    }
+    if (_isPreviousResident && _previousBuildingIdController.text.trim().isEmpty) {
+      _showMessage('يرجى إدخال رقم المبنى السابق، أو إلغاء "سكنت سابقاً".');
+      return;
+    }
+
+    final cubit = context.read<HousingRequestCubit>();
+    final gender =
+        widget.existingRequest?.gender ?? _prefilledGender;
+    final previousBuildingId = int.tryParse(
+      _previousBuildingIdController.text.trim(),
+    );
+    final previousFloor = int.tryParse(_previousFloorController.text.trim());
+    final previousRoom = _previousRoomController.text.trim();
+    final notes = _notesController.text.trim();
+
+    if (_isEditMode) {
+      cubit.updateRequest(
+        requestId: widget.existingRequest!.id,
+        gender: gender,
+        governorateId: _governorateId!,
+        academicLevel: _academicLevel,
+        detailedAddress: _addressController.text.trim(),
+        hasSpecialNeeds: _hasSpecialNeeds,
+        isPreviousResident: _isPreviousResident,
+        previousBuildingId: _isPreviousResident ? previousBuildingId : null,
+        previousFloor: _isPreviousResident ? previousFloor : null,
+        previousRoomNumber:
+            _isPreviousResident && previousRoom.isNotEmpty ? previousRoom : null,
+        specialNotes: notes.isEmpty ? null : notes,
+        // فقط المستندات يلي معها بايتات محلية جديدة (استُبدلت فعلياً).
+        replacedDocuments:
+            _documents.values.where((d) => d.bytes != null).toList(),
+      );
+    } else {
+      cubit.submitRequest(
+        gender: gender,
+        governorateId: _governorateId!,
+        academicLevel: _academicLevel,
+        detailedAddress: _addressController.text.trim(),
+        hasSpecialNeeds: _hasSpecialNeeds,
+        isPreviousResident: _isPreviousResident,
+        previousBuildingId: _isPreviousResident ? previousBuildingId : null,
+        previousFloor: _isPreviousResident ? previousFloor : null,
+        previousRoomNumber:
+            _isPreviousResident && previousRoom.isNotEmpty ? previousRoom : null,
+        specialNotes: notes.isEmpty ? null : notes,
+        documents: _documents.values.toList(),
+      );
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isGroupRequest = requestType == 'group';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CustomCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'نوع الطلب',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+          if (_isEditMode) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warningBackground,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.secondaryDark,
+                    size: 20,
                   ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children:
-                      HousingRequestLabels.requestTypes.entries.map((entry) {
-                        return CustomChip(
-                          label: entry.value,
-                          selected: requestType == entry.key,
-                          onTap:
-                              isSubmitting
-                                  ? null
-                                  : () => onRequestTypeChanged(entry.key),
-                        );
-                      }).toList(),
-                ),
-                if (isGroupRequest) ...[
-                  const SizedBox(height: 14),
-                  if (myGroup != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.successBackground,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'طلبك يحتاج تعديل — راجع ملاحظات كل مستند مرفوض أدناه واستبدله، ثم أعد الإرسال.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.secondaryDark,
+                        fontWeight: FontWeight.w700,
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.groups_rounded,
-                            color: AppColors.success,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'سيُقدَّم الطلب باسم غروبك (${myGroup!.code}) — ${myGroup!.memberCount} أعضاء.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorBackground,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'يجب الانضمام إلى غروب أو إنشاء واحد أولاً لتقديم طلب كغروب.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.error,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          CustomCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'نوع السكن',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children:
-                      HousingRequestLabels.roomTypes.entries.map((entry) {
-                        return CustomChip(
-                          label: entry.value,
-                          selected: roomType == entry.key,
-                          onTap:
-                              isSubmitting
-                                  ? null
-                                  : () => onRoomTypeChanged(entry.key),
-                        );
-                      }).toList(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          CustomCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'المبنى المفضل',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children:
-                      HousingRequestLabels.buildings.entries.map((entry) {
-                        return CustomChip(
-                          label: entry.value,
-                          selected: building == entry.key,
-                          onTap:
-                              isSubmitting
-                                  ? null
-                                  : () => onBuildingChanged(entry.key),
-                        );
-                      }).toList(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          CustomCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'المستندات الداعمة',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'مثل سند الإقامة أو أي مستند رسمي مشابه',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (var i = 0; i < documents.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        if (documents[i].bytes != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.memory(
-                              documents[i].bytes!,
-                              width: 32,
-                              height: 32,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        else
-                          const Icon(
-                            Icons.description_outlined,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            documents[i].name,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        InkWell(
-                          onTap:
-                              isSubmitting ? null : () => onRemoveDocument(i),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: AppColors.textHint,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
-                if (documents.isNotEmpty) const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: isSubmitting ? null : onAddDocument,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('إرفاق مستند'),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          CustomCard(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'المحافظة',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      widget.governorates.map((gov) {
+                        return CustomChip(
+                          label: gov.name,
+                          selected: _governorateId == gov.id,
+                          onTap: () => setState(() => _governorateId = gov.id),
+                        );
+                      }).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          CustomCard(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'المستوى الدراسي',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      List.generate(5, (i) => i + 1).map((level) {
+                        return CustomChip(
+                          label: HousingRequestLabels.academicLevelLabel(level),
+                          selected: _academicLevel == level,
+                          onTap: () => setState(() => _academicLevel = level),
+                        );
+                      }).toList(),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
           CustomTextField(
-            controller: notesController,
+            controller: _addressController,
+            label: 'العنوان التفصيلي',
+            hint: 'مثال: حلب - حي الشهباء - شارع...',
+            maxLines: 2,
+            minLines: 1,
+          ),
+          const SizedBox(height: 16),
+          CustomCard(
+            padding: const EdgeInsets.all(4),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  value: _hasSpecialNeeds,
+                  onChanged: (value) => setState(() => _hasSpecialNeeds = value),
+                  title: const Text('لدي احتياجات خاصة'),
+                  activeColor: AppColors.primary,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  value: _isPreviousResident,
+                  onChanged:
+                      (value) => setState(() => _isPreviousResident = value),
+                  title: const Text('سكنت بالسكن الجامعي سابقاً'),
+                  activeColor: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+          if (_isPreviousResident) ...[
+            const SizedBox(height: 16),
+            CustomCard(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'بيانات السكن السابق',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'رقم المبنى كما هو مسجَّل بإدارة السكن',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  CustomTextField(
+                    controller: _previousBuildingIdController,
+                    label: 'رقم المبنى',
+                    hint: 'مثال: 3',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  CustomTextField(
+                    controller: _previousFloorController,
+                    label: 'الطابق (اختياري)',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  CustomTextField(
+                    controller: _previousRoomController,
+                    label: 'رقم الغرفة (اختياري)',
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          CustomCard(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'المستندات',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'الخمسة الأولى إلزامية، والأخيرتان اختياريتان',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                for (final type in HousingDocumentType.values) ...[
+                  if (type != HousingDocumentType.values.first)
+                    const SizedBox(height: 10),
+                  _DocumentSlot(
+                    type: type,
+                    document: _documents[type],
+                    editable: !_isEditMode || _documents[type] == null
+                        ? true
+                        : _documents[type]!.reviewStatus !=
+                            DocumentReviewStatus.approved,
+                    onTap: () => _pickDocument(type),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            controller: _notesController,
             label: 'ملاحظات إضافية (اختياري)',
-            hint: 'مثال: أفضل السكن قرب أصدقائي بالغروب...',
-            enabled: !isSubmitting,
+            hint: 'أي معلومة إضافية تودّ إخبارنا بها',
             maxLines: 4,
             minLines: 3,
           ),
           const SizedBox(height: 22),
-          CustomButton(
-            label: 'إرسال الطلب',
-            icon: Icons.send_rounded,
-            isLoading: isSubmitting,
-            onPressed: onSubmit,
+          BlocBuilder<HousingRequestCubit, HousingRequestState>(
+            builder: (context, state) {
+              return CustomButton(
+                label: _isEditMode ? 'إعادة إرسال الطلب' : 'إرسال الطلب',
+                icon: Icons.send_rounded,
+                isLoading: state is HousingRequestSubmitting,
+                onPressed: _submit,
+              );
+            },
           ),
         ],
       ),
@@ -539,22 +578,129 @@ class _RequestForm extends StatelessWidget {
   }
 }
 
-class _SubmittedView extends StatelessWidget {
-  const _SubmittedView({required this.request});
+class _DocumentSlot extends StatelessWidget {
+  const _DocumentSlot({
+    required this.type,
+    required this.document,
+    required this.editable,
+    required this.onTap,
+  });
+
+  final HousingDocumentType type;
+  final HousingDocument? document;
+  final bool editable;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasLocalBytes = document?.bytes != null;
+    final reviewStatus = document?.reviewStatus;
+
+    final (Color statusColor, String? statusLabel) = switch (reviewStatus) {
+      DocumentReviewStatus.approved => (AppColors.success, 'مقبول'),
+      DocumentReviewStatus.rejected => (AppColors.error, 'مرفوض'),
+      DocumentReviewStatus.pending => (AppColors.secondaryDark, 'قيد المراجعة'),
+      null => (AppColors.textHint, null),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color:
+              reviewStatus == DocumentReviewStatus.rejected
+                  ? AppColors.error
+                  : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (hasLocalBytes && document?.bytes != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.memory(
+                    document!.bytes!,
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Icon(
+                  document != null
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.description_outlined,
+                  color:
+                      document != null ? statusColor : AppColors.primary,
+                  size: 20,
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      type.label + (type.mandatory ? ' *' : ''),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (statusLabel != null)
+                      Text(
+                        statusLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (editable)
+                TextButton(
+                  onPressed: onTap,
+                  child: Text(document != null ? 'استبدال' : 'إرفاق'),
+                ),
+            ],
+          ),
+          if (reviewStatus == DocumentReviewStatus.rejected &&
+              document?.reviewNotes != null &&
+              document!.reviewNotes!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              document!.reviewNotes!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: AppColors.error,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusView extends StatelessWidget {
+  const _StatusView({required this.request});
 
   final HousingRequest request;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final decision = request.decision;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _StatusStepper(status: request.status),
-          const SizedBox(height: 24),
           CustomCard(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -563,7 +709,7 @@ class _SubmittedView extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'تفاصيل الطلب',
+                      'حالة الطلب',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -575,15 +721,13 @@ class _SubmittedView extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.statusColor(
-                          request.status,
-                        ).withValues(alpha: 0.12),
+                        color: AppColors.primarySubtle,
                         borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                       child: Text(
-                        HousingRequestLabels.statusLabel(request.status),
+                        request.status.label,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.statusColor(request.status),
+                          color: AppColors.primaryDark,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -592,51 +736,95 @@ class _SubmittedView extends StatelessWidget {
                 ),
                 const Divider(height: 24),
                 _DetailRow(
-                  label: 'نوع الطلب',
-                  value: HousingRequestLabels.requestTypeLabel(
-                    request.requestType,
+                  label: 'المستوى الدراسي',
+                  value: HousingRequestLabels.academicLevelLabel(
+                    request.academicLevel,
                   ),
-                ),
-                if (request.groupCode != null) ...[
-                  const SizedBox(height: 12),
-                  _DetailRow(label: 'كود الغروب', value: request.groupCode!),
-                ],
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'نوع السكن',
-                  value: HousingRequestLabels.roomTypeLabel(request.roomType),
                 ),
                 const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'المبنى المفضل',
-                  value: HousingRequestLabels.buildingLabel(
-                    request.preferredBuilding,
-                  ),
-                ),
-                if (request.documents.isNotEmpty) ...[
+                _DetailRow(label: 'العنوان', value: request.detailedAddress),
+                if (request.specialNotes != null &&
+                    request.specialNotes!.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  _DetailRow(
-                    label: 'المستندات',
-                    value: '${request.documents.length} مرفق',
-                  ),
-                ],
-                if (request.notes != null) ...[
-                  const SizedBox(height: 12),
-                  _DetailRow(label: 'ملاحظات', value: request.notes!),
+                  _DetailRow(label: 'ملاحظات', value: request.specialNotes!),
                 ],
               ],
             ),
           ),
+          if (decision != null) ...[
+            const SizedBox(height: 16),
+            CustomCard(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'القرار',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusColor(
+                            decision.status.name,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                        child: Text(
+                          decision.status.label,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: AppColors.statusColor(decision.status.name),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (decision.decisionReason != null &&
+                      decision.decisionReason!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      decision.decisionReason!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
-          Text(
-            request.status == 'pending'
-                ? 'سيتم إشعارك فور مراجعة طلبك من إدارة السكن الجامعي.'
-                : request.status == 'accepted'
-                ? 'تهانينا! تم قبول طلبك. راجع الرئيسية لمتابعة تفاصيل السكن.'
-                : 'للأسف تم رفض الطلب. تواصل مع إدارة السكن لمزيد من التفاصيل.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
+          CustomCard(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'المستندات',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                for (var i = 0; i < request.documents.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _DocumentSlot(
+                    type: request.documents[i].type,
+                    document: request.documents[i],
+                    editable: false,
+                    onTap: () {},
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -674,123 +862,6 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _StatusStepper extends StatelessWidget {
-  const _StatusStepper({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final isRejected = status == 'rejected';
-    final isAccepted = status == 'accepted';
-    final decided = isRejected || isAccepted;
-
-    return Row(
-      children: [
-        Expanded(child: _Step(label: 'الإرسال', state: _StepState.done)),
-        _StepLine(active: true),
-        Expanded(
-          child: _Step(
-            label: 'المراجعة',
-            state: decided ? _StepState.done : _StepState.current,
-          ),
-        ),
-        _StepLine(active: decided),
-        Expanded(
-          child: _Step(
-            label: 'القرار',
-            state:
-                isAccepted
-                    ? _StepState.done
-                    : isRejected
-                    ? _StepState.rejected
-                    : _StepState.pending,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-enum _StepState { done, current, pending, rejected }
-
-class _Step extends StatelessWidget {
-  const _Step({required this.label, required this.state});
-
-  final String label;
-  final _StepState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final (Color bg, Widget child) = switch (state) {
-      _StepState.done => (
-        AppColors.success,
-        const Icon(Icons.check_rounded, color: AppColors.white, size: 16),
-      ),
-      _StepState.rejected => (
-        AppColors.error,
-        const Icon(Icons.close_rounded, color: AppColors.white, size: 16),
-      ),
-      _StepState.current => (
-        AppColors.primary,
-        Text(
-          '2',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: AppColors.white,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      _StepState.pending => (
-        AppColors.border,
-        Text(
-          '3',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: AppColors.textHint,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    };
-
-    return Column(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Center(child: child),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: AppColors.textHint,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StepLine extends StatelessWidget {
-  const _StepLine({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 2,
-      margin: const EdgeInsets.only(bottom: 20),
-      color: active ? AppColors.success : AppColors.border,
     );
   }
 }

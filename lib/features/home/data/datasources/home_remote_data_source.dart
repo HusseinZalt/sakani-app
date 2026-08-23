@@ -1,4 +1,5 @@
 import '../../../housing_request/data/datasources/housing_request_remote_data_source.dart';
+import '../../../housing_request/domain/entities/housing_request.dart';
 import '../models/home_dashboard_model.dart';
 import 'ads_remote_data_source.dart';
 
@@ -17,20 +18,21 @@ class HomeRemoteDataSource {
     // الدائم بأنه مقبول في غرفة A-204 بغض النظر عن الواقع.
     final myRequest = await HousingRequestRemoteDataSource().fetchMyRequest();
     final ads = await AdsRemoteDataSource().fetchActiveAds();
-    final Map<String, dynamic> housingStatus =
-        myRequest == null
-            ? {'status': 'none'}
-            : switch (myRequest.status) {
-              'accepted' => {
-                'status': 'accepted',
-                'buildingUnit': 'الوحدة أ',
-                'roomNumber': 'A-204',
-                'daysUntilPayment': 12,
-                'paymentReference': 'PAY-2025-4521',
-              },
-              'rejected' => {'status': 'rejected'},
-              _ => {'status': 'pending'},
-            };
+    // بانتظار ربط `/api/allocations/mine` (رقم الغرفة/المبنى الفعليَّين
+    // بعد التخصيص) — حالياً نعرض حالة القرار بلا تفاصيل الغرفة الوهمية
+    // القديمة.
+    final Map<String, dynamic> housingStatus;
+    if (myRequest == null) {
+      housingStatus = {'status': 'none'};
+    } else {
+      housingStatus = switch (myRequest.decision?.status) {
+        null => {'status': 'pending'},
+        AdmissionDecisionStatus.accepted => {'status': 'accepted'},
+        AdmissionDecisionStatus.rejected => {'status': 'rejected'},
+        AdmissionDecisionStatus.pending ||
+        AdmissionDecisionStatus.waitingList => {'status': 'pending'},
+      };
+    }
 
     final baseJson = HomeDashboardModel.fromJson({
       'studentName': 'أحمد محمد',

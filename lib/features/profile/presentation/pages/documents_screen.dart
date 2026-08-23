@@ -8,6 +8,7 @@ import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../housing_request/data/repositories/housing_request_repository_impl.dart';
+import '../../../housing_request/domain/entities/housing_document.dart';
 import '../../../housing_request/domain/entities/housing_request.dart';
 
 /// شاشة "المستندات": عرض المستندات المرتبطة بحساب المستخدم — الهوية
@@ -95,9 +96,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             for (final document in documents) ...[
                               _DocumentTile(
                                 icon: Icons.description_outlined,
-                                title: document.name,
-                                subtitle: 'مرفق بطلب السكن',
-                                verified: true,
+                                title: document.type.label,
+                                subtitle:
+                                    document.reviewStatus?.label ??
+                                    'مرفق بطلب السكن',
+                                verified:
+                                    document.reviewStatus ==
+                                    DocumentReviewStatus.approved,
                               ),
                               const SizedBox(height: 8),
                             ],

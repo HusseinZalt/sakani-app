@@ -1,45 +1,136 @@
+import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/parse_utc_date_time.dart';
+import '../../domain/entities/governorate.dart';
+import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
+
+class GovernorateModel extends Governorate {
+  const GovernorateModel({required super.id, required super.name});
+
+  factory GovernorateModel.fromJson(Map<String, dynamic> json) {
+    return GovernorateModel(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+    );
+  }
+}
+
+class HousingCycleModel extends HousingCycle {
+  const HousingCycleModel({
+    required super.id,
+    required super.name,
+    required super.isOpen,
+  });
+
+  /// `HousingCycleStatus`: 0=Closed، 1=Open — مؤكَّدة عبر Swagger الخدمة.
+  factory HousingCycleModel.fromJson(Map<String, dynamic> json) {
+    return HousingCycleModel(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      isOpen: json['status'] == 1,
+    );
+  }
+}
+
+class HousingDocumentModel extends HousingDocument {
+  const HousingDocumentModel({
+    required super.type,
+    super.id,
+    super.url,
+    super.reviewStatus,
+    super.reviewNotes,
+  });
+
+  factory HousingDocumentModel.fromJson(Map<String, dynamic> json) {
+    return HousingDocumentModel(
+      type: HousingDocumentType.fromApiValue(json['type'] as int? ?? 0),
+      id: json['id'] as int?,
+      url: _resolveFileUrl(json['documentPath'] as String?),
+      reviewStatus: DocumentReviewStatus.fromApiValue(
+        json['reviewStatus'] as int? ?? 0,
+      ),
+      reviewNotes: json['reviewNotes'] as String?,
+    );
+  }
+
+  static String? _resolveFileUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final normalized = path.startsWith('/') ? path : '/$path';
+    return '${ApiClient.housingBaseUrl}$normalized';
+  }
+}
+
+class AdmissionDecisionModel extends AdmissionDecision {
+  const AdmissionDecisionModel({
+    required super.status,
+    super.decisionReason,
+    super.decisionDate,
+  });
+
+  factory AdmissionDecisionModel.fromJson(Map<String, dynamic> json) {
+    final decisionDate = json['decisionDate'] as String?;
+    return AdmissionDecisionModel(
+      status: AdmissionDecisionStatus.fromApiValue(
+        json['status'] as int? ?? 0,
+      ),
+      decisionReason: json['decisionReason'] as String?,
+      decisionDate:
+          decisionDate != null ? parseUtcDateTime(decisionDate) : null,
+    );
+  }
+}
 
 class HousingRequestModel extends HousingRequest {
   const HousingRequestModel({
     required super.id,
-    required super.userId,
-    required super.requestType,
-    required super.roomType,
-    required super.preferredBuilding,
+    required super.gender,
+    required super.governorateId,
+    required super.academicLevel,
+    required super.detailedAddress,
+    required super.hasSpecialNeeds,
+    required super.isPreviousResident,
     required super.status,
-    required super.createdAt,
-    super.groupCode,
+    required super.submittedAt,
+    super.previousBuildingId,
+    super.previousFloor,
+    super.previousRoomNumber,
+    super.specialNotes,
     super.documents,
-    super.notes,
+    super.decision,
   });
 
-  /// ملاحظة: بايتات المستندات لا يمكن أن تصل عبر JSON (بيانات ثنائية محلية
-  /// فقط)، لذا تبقى null دائماً عند القراءة من استجابة حقيقية مستقبلاً —
-  /// يُفترض عندها أن تحمل الاستجابة `url` بدلاً منها.
+  /// يحوّل عنصر `HousingRequestDto` من خدمة السكن الحقيقية (ASP.NET Core،
+  /// راجع `HousingService_Guide.md`) إلى نموذج التطبيق.
   factory HousingRequestModel.fromJson(Map<String, dynamic> json) {
+    final decisionJson = json['decision'] as Map<String, dynamic>?;
     return HousingRequestModel(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      requestType: json['requestType'] as String,
-      roomType: json['roomType'] as String,
-      preferredBuilding: json['preferredBuilding'] as String,
-      status: json['status'] as String,
-      createdAt: parseUtcDateTime(json['createdAt'] as String),
-      groupCode: json['groupCode'] as String?,
+      id: json['id'] as int,
+      gender: json['gender'] as int? ?? 0,
+      governorateId: json['governorateId'] as int,
+      academicLevel: json['academicLevel'] as int,
+      detailedAddress: json['detailedAddress'] as String? ?? '',
+      hasSpecialNeeds: json['hasSpecialNeeds'] as bool? ?? false,
+      isPreviousResident: json['isPreviousResident'] as bool? ?? false,
+      previousBuildingId: json['previousBuildingId'] as int?,
+      previousFloor: json['previousFloor'] as int?,
+      previousRoomNumber: json['previousRoomNumber'] as String?,
+      status: HousingRequestStatus.fromApiValue(json['status'] as int? ?? 0),
+      specialNotes: json['specialNotes'] as String?,
       documents:
-          (json['documents'] as List<dynamic>?)
-              ?.map(
-                (d) => HousingDocument(
-                  name: (d as Map<String, dynamic>)['name'] as String,
-                  url: d['url'] as String?,
-                ),
-              )
+          (json['documents'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(HousingDocumentModel.fromJson)
               .toList() ??
           const [],
-      notes: json['notes'] as String?,
+      decision:
+          decisionJson != null
+              ? AdmissionDecisionModel.fromJson(decisionJson)
+              : null,
+      submittedAt: parseUtcDateTime(json['submittedAt'] as String),
     );
   }
 }
