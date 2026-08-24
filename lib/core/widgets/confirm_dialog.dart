@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
 
@@ -23,7 +24,10 @@ Future<bool> confirmAction(
               child: Text(cancelLabel),
             ),
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.of(dialogContext).pop(true);
+              },
               child: Text(
                 confirmLabel,
                 style: const TextStyle(color: AppColors.error),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -54,6 +55,15 @@ class _HousingRequestView extends StatelessWidget {
             ),
             Expanded(
               child: BlocConsumer<HousingRequestCubit, HousingRequestState>(
+                listenWhen: (previous, current) {
+                  if (current is HousingRequestFailure) return true;
+                  return current is HousingRequestSubmitted &&
+                      current.request.decision?.status ==
+                          AdmissionDecisionStatus.accepted &&
+                      !(previous is HousingRequestSubmitted &&
+                          previous.request.decision?.status ==
+                              AdmissionDecisionStatus.accepted);
+                },
                 listener: (context, state) {
                   if (state is HousingRequestFailure) {
                     ScaffoldMessenger.of(context)
@@ -61,6 +71,10 @@ class _HousingRequestView extends StatelessWidget {
                       ..showSnackBar(
                         SnackBar(content: Text(state.failure.message)),
                       );
+                  } else if (state is HousingRequestSubmitted) {
+                    // لحظة القبول تستأهل اهتزازاً لطيفاً بدل ما تمر بهدوء
+                    // متل أي تحديث حالة عادي.
+                    HapticFeedback.mediumImpact();
                   }
                 },
                 builder: (context, state) {

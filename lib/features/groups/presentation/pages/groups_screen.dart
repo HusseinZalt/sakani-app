@@ -65,6 +65,7 @@ class _GroupsViewState extends State<_GroupsView> {
     final result = await cubit.createGroup();
     if (!mounted) return;
     setState(() => _isSubmitting = false);
+    if (result.isSuccess) HapticFeedback.lightImpact();
     _showMessage(
       result.isSuccess
           ? 'تم إنشاء الغروب بنجاح.'
@@ -89,7 +90,10 @@ class _GroupsViewState extends State<_GroupsView> {
     final result = await cubit.joinGroupByCode(code);
     if (!mounted) return;
     setState(() => _isSubmitting = false);
-    if (result.isSuccess) _joinCodeController.clear();
+    if (result.isSuccess) {
+      HapticFeedback.lightImpact();
+      _joinCodeController.clear();
+    }
     _showMessage(
       result.isSuccess
           ? 'تم إرسال طلب الانضمام، بانتظار موافقة قائد الغروب.'
@@ -107,6 +111,7 @@ class _GroupsViewState extends State<_GroupsView> {
       approve: approve,
     );
     if (!mounted) return;
+    if (result.isSuccess) HapticFeedback.lightImpact();
     _showMessage(
       result.isSuccess
           ? (approve ? 'تم قبول طلب الانضمام.' : 'تم رفض طلب الانضمام.')
@@ -284,9 +289,27 @@ class _MyGroupCard extends StatelessWidget {
               color: AppColors.background,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
+                Text(
+                  group.code,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textDirection: TextDirection.ltr,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'كود الغروب — شاركه لدعوة زملائك',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textHint,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _GroupCodeActionButton(
+                  icon: Icons.copy_rounded,
+                  label: 'نسخ',
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: group.code));
                     ScaffoldMessenger.of(context)
@@ -295,55 +318,6 @@ class _MyGroupCard extends StatelessWidget {
                         const SnackBar(content: Text('تم نسخ كود الغروب.')),
                       );
                   },
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.copy_rounded,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'نسخ',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      group.code,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                      textDirection: TextDirection.ltr,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'كود الغروب — شاركه لدعوة زملائك',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -373,6 +347,49 @@ class _MyGroupCard extends StatelessWidget {
             label: const Text('مغادرة الغروب'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GroupCodeActionButton extends StatelessWidget {
+  const _GroupCodeActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: AppColors.textSecondary),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

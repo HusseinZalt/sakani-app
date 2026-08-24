@@ -89,6 +89,8 @@ class _NotificationsViewState extends State<_NotificationsView> {
 
   static Map<String, Color> get _colors => {
     'success': AppColors.success,
+    'celebration': AppColors.success,
+    'error': AppColors.error,
     'accent': AppColors.accent,
     'info': AppColors.primary,
     'warning': AppColors.secondaryDark,
@@ -97,6 +99,8 @@ class _NotificationsViewState extends State<_NotificationsView> {
 
   static Map<String, Color> get _backgrounds => {
     'success': AppColors.successBackground,
+    'celebration': AppColors.successBackground,
+    'error': AppColors.errorBackground,
     'accent': AppColors.accentSubtle,
     'info': AppColors.primarySubtle,
     'warning': AppColors.warningBackground,
@@ -105,6 +109,8 @@ class _NotificationsViewState extends State<_NotificationsView> {
 
   static const _icons = {
     'success': Icons.check_circle_outline_rounded,
+    'celebration': Icons.celebration_rounded,
+    'error': Icons.cancel_rounded,
     'accent': Icons.outlined_flag_rounded,
     'info': Icons.people_outline_rounded,
     'warning': Icons.build_outlined,

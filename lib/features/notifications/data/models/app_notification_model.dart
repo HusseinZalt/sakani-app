@@ -54,24 +54,32 @@ class AppNotificationModel extends AppNotification {
     final type = (data?['type'] as String?) ?? (adId != null ? 'ad' : null);
     final relatedId = (data?['relatedId'] as String?) ?? adId;
     final createdAt = parseUtcDateTime(json['createdAt'] as String);
+    final title = json['title'] as String? ?? '';
 
     return AppNotificationModel(
       id: json['notificationId'].toString(),
-      title: json['title'] as String? ?? '',
+      title: title,
       body: json['body'] as String?,
       createdAt: createdAt,
       timeLabel: formatRelativeTime(createdAt),
-      colorKey: _colorKeyForType(type),
+      colorKey: _colorKeyForType(type, title),
       isUnread: !(json['isRead'] as bool? ?? false),
       type: type,
       relatedId: relatedId,
     );
   }
 
-  static String _colorKeyForType(String? type) {
+  /// خدمة السكن ترسل كل إشعاراتها بنفس `type: "housing"` بغض النظر عن
+  /// كون القرار قبولاً أو رفضاً — نميّز بينهما من نص العنوان نفسه
+  /// (مؤكَّد بالاختبار الفعلي: "تم قبول طلب التسكين" / "تم رفض طلب
+  /// التسكين") بدل تلوين الرفض بنفس أخضر النجاح.
+  static String _colorKeyForType(String? type, String title) {
+    if (type == 'housing') {
+      if (title.contains('رفض')) return 'error';
+      if (title.contains('قبول')) return 'celebration';
+      return 'success';
+    }
     switch (type) {
-      case 'housing':
-        return 'success';
       case 'complaint':
         return 'accent';
       case 'group':

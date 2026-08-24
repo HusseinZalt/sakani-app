@@ -1,9 +1,26 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/parse_utc_date_time.dart';
+import '../../domain/entities/allocation.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
+
+class AllocationModel extends Allocation {
+  const AllocationModel({
+    required super.roomNumber,
+    required super.buildingName,
+    required super.allocatedAt,
+  });
+
+  factory AllocationModel.fromJson(Map<String, dynamic> json) {
+    return AllocationModel(
+      roomNumber: json['roomNumber'] as String? ?? '',
+      buildingName: json['buildingName'] as String? ?? '',
+      allocatedAt: parseUtcDateTime(json['allocatedAt'] as String),
+    );
+  }
+}
 
 class GovernorateModel extends Governorate {
   const GovernorateModel({required super.id, required super.name});

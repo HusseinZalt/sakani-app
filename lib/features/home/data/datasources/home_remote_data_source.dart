@@ -23,18 +23,20 @@ class HomeRemoteDataSource {
     // حالة السكن مُشتقة من طلب السكن الفعلي للمستخدم (وليست قيمة ثابتة)،
     // حتى تبقى الرئيسية متسقة مع ما قدّمه المستخدم فعلياً بدل الادّعاء
     // الدائم بأنه مقبول في غرفة A-204 بغض النظر عن الواقع.
-    final myRequest = await HousingRequestRemoteDataSource().fetchMyRequest();
+    final housingDataSource = HousingRequestRemoteDataSource();
+    final myRequest = await housingDataSource.fetchMyRequest();
     final ads = await AdsRemoteDataSource().fetchActiveAds();
-    // بانتظار ربط `/api/allocations/mine` (رقم الغرفة/المبنى الفعليَّين
-    // بعد التخصيص) — حالياً نعرض حالة القرار بلا تفاصيل الغرفة الوهمية
-    // القديمة.
+
     final Map<String, dynamic> housingStatus;
     if (myRequest == null) {
       housingStatus = {'status': 'none'};
     } else {
       housingStatus = switch (myRequest.decision?.status) {
         null => {'status': 'pending'},
-        AdmissionDecisionStatus.accepted => {'status': 'accepted'},
+        AdmissionDecisionStatus.accepted => {
+          'status': 'accepted',
+          ...await _fetchAllocationFields(housingDataSource),
+        },
         AdmissionDecisionStatus.rejected => {'status': 'rejected'},
         AdmissionDecisionStatus.pending ||
         AdmissionDecisionStatus.waitingList => {'status': 'pending'},
@@ -54,6 +56,24 @@ class HomeRemoteDataSource {
       announcements: ads,
       activities: await _fetchRecentActivities(),
     );
+  }
+
+  /// تفاصيل الغرفة الفعلية بعد القبول، إن وُجدت — التخصيص إجراء إداري
+  /// منفصل قد يتأخر عن قرار القبول نفسه، فنتعامل مع غيابه بهدوء (بطاقة
+  /// حالة السكن تعرض "—" ببساطة) بدل اعتباره خطأً.
+  Future<Map<String, dynamic>> _fetchAllocationFields(
+    HousingRequestRemoteDataSource dataSource,
+  ) async {
+    try {
+      final allocation = await dataSource.fetchMyAllocation();
+      if (allocation == null) return const {};
+      return {
+        'buildingUnit': allocation.buildingName,
+        'roomNumber': allocation.roomNumber,
+      };
+    } catch (_) {
+      return const {};
+    }
   }
 
   Future<List<ActivityLogItemModel>> _fetchRecentActivities() async {

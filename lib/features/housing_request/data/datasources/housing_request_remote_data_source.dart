@@ -41,6 +41,18 @@ class HousingRequestRemoteDataSource {
     }
   }
 
+  /// تخصيص الغرفة الفعلي للطالب، أو null إن لم يُخصَّص بعد (404) — إجراء
+  /// إداري منفصل عن قرار القبول، قد يتأخر عنه.
+  Future<AllocationModel?> fetchMyAllocation() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/allocations/mine');
+      return AllocationModel.fromJson(_asJsonMap(response.data));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      throw _mapDioException(e);
+    }
+  }
+
   Future<List<GovernorateModel>> fetchGovernorates() async {
     try {
       final response = await _dio.get<dynamic>('/api/governorates');

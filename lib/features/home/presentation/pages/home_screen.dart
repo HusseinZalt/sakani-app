@@ -740,6 +740,8 @@ class _ActivityList extends StatelessWidget {
 
   static Map<String, Color> get _colors => {
     'success': AppColors.success,
+    'celebration': AppColors.success,
+    'error': AppColors.error,
     'info': AppColors.primary,
     'neutral': AppColors.textDisabled,
   };
