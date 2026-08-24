@@ -193,6 +193,12 @@ class AppColors {
     colors: [amber500, red600],
   );
 
+  static const LinearGradient successGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [green400, green700],
+  );
+
   /// إرجاع لون حالة الطلب المناسب (سكن/خدمة/شكوى) حسب النص الوارد من الباك إند.
   static Color statusColor(String status) {
     switch (status) {

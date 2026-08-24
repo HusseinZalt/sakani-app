@@ -711,6 +711,10 @@ class _StatusView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (decision?.status == AdmissionDecisionStatus.accepted) ...[
+            const _AcceptedCelebrationBanner(),
+            const SizedBox(height: 16),
+          ],
           CustomCard(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -835,6 +839,55 @@ class _StatusView extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// بانر احتفالي يظهر فوق حالة الطلب فقط عند القبول — لحظة سعيدة تستحق
+/// أكثر من مجرد شارة نصية رمادية بين باقي التفاصيل.
+class _AcceptedCelebrationBanner extends StatelessWidget {
+  const _AcceptedCelebrationBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      decoration: BoxDecoration(
+        gradient: AppColors.successGradient,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.success.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text('🎉', style: TextStyle(fontSize: 44)),
+          const SizedBox(height: 12),
+          Text(
+            'مبروك! تم قبول طلب سكنك',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'نتمنى لك إقامة موفقة، تابع الإشعارات لمعرفة تفاصيل التسكين.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.white.withValues(alpha: 0.9),
             ),
           ),
         ],
