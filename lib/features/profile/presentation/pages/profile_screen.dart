@@ -199,13 +199,18 @@ class _ProfileInfoRow extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const Spacer(),
-          Directionality(
-            textDirection: isLtr ? TextDirection.ltr : TextDirection.rtl,
-            child: Text(
-              value,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Directionality(
+              textDirection: isLtr ? TextDirection.ltr : TextDirection.rtl,
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
