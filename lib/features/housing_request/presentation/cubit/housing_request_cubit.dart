@@ -38,15 +38,19 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
     final requestResult = await _repository.fetchMyRequest();
     switch (requestResult) {
       case ApiSuccess<HousingRequest?>(:final data):
-        if (data != null) {
-          emit(HousingRequestSubmitted(data));
-          return;
-        }
+        // نجلب المحافظات دائماً هون (وليس فقط لما ما يكون في طلب بعد):
+        // طلب موجود بحالة NeedsRevision لازم يعيد عرض نفس نموذج التعديل
+        // بقائمة المحافظات معبّأة، وإلا يبقى منتقي المحافظة فارغاً بدون
+        // أي خيارات — وهو تحديداً ما كان يحصل قبل هذا الإصلاح.
         final governoratesResult = await _repository.fetchGovernorates();
         final governorates = switch (governoratesResult) {
           ApiSuccess<List<Governorate>>(:final data) => data,
           ApiFailureResult<List<Governorate>>() => const <Governorate>[],
         };
+        if (data != null) {
+          emit(HousingRequestSubmitted(data, governorates: governorates));
+          return;
+        }
         emit(HousingRequestEmpty(governorates: governorates));
       case ApiFailureResult<HousingRequest?>(:final failure):
         emit(HousingRequestFailure(failure));

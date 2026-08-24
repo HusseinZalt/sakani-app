@@ -337,9 +337,26 @@ class HousingRequestRemoteDataSource {
     }
 
     if (rawData is String && rawData.trim().isNotEmpty) {
-      return rawData.trim();
+      final trimmed = rawData.trim();
+      return _translateNotFoundMessage(trimmed) ?? trimmed;
     }
 
     return 'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
+  }
+
+  /// يترجم نص خطأ خام معروف الشكل مثل `"PreviousBuildingId was not
+  /// found."` (مؤكَّد بالاختبار الفعلي — يظهر عند إدخال رقم مبنى سابق
+  /// غير مسجَّل فعلياً بجدول المباني عند الخادم، إذ الحقل يُتحقَّق منه
+  /// كمعرّف حقيقي لمبنى موجود وليس مجرد رقم حر يذكره الطالب) إلى رسالة
+  /// عربية بنفس اسم الحقل المألوف للمستخدم بدل تركه بالإنجليزية الخام.
+  String? _translateNotFoundMessage(String message) {
+    final match = RegExp(
+      r'^(\w+) was not found\.?$',
+      caseSensitive: false,
+    ).firstMatch(message);
+    if (match == null) return null;
+    final field = match.group(1)!;
+    final label = _fieldLabels[field] ?? field;
+    return '$label الذي أدخلته غير مسجَّل في النظام، يرجى التحقق منه.';
   }
 }
