@@ -9,6 +9,7 @@ import '../../../../core/constants/app_radius.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/widgets/custom_card.dart';
+import '../../../../core/widgets/refresh_on_tab_visible.dart';
 import '../../data/repositories/home_repository_impl.dart';
 import '../../domain/entities/home_dashboard.dart';
 import '../cubit/home_cubit.dart';
@@ -33,19 +34,24 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: BlocBuilder<HomeCubit, HomeState>(
-        builder: (context, state) {
-          return switch (state) {
-            HomeInitial() || HomeLoading() => const _HomeSkeleton(),
-            HomeFailure(:final failure) => _HomeErrorView(
-              message: failure.message,
-              onRetry: () => context.read<HomeCubit>().fetchDashboard(),
-            ),
-            HomeSuccess(:final dashboard) => _HomeContent(dashboard: dashboard),
-          };
-        },
+    return RefreshOnTabVisible(
+      onVisible: () => context.read<HomeCubit>().fetchDashboard(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: BlocBuilder<HomeCubit, HomeState>(
+          builder: (context, state) {
+            return switch (state) {
+              HomeInitial() || HomeLoading() => const _HomeSkeleton(),
+              HomeFailure(:final failure) => _HomeErrorView(
+                message: failure.message,
+                onRetry: () => context.read<HomeCubit>().fetchDashboard(),
+              ),
+              HomeSuccess(:final dashboard) => _HomeContent(
+                dashboard: dashboard,
+              ),
+            };
+          },
+        ),
       ),
     );
   }
@@ -360,10 +366,7 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black87,
-                                  ],
+                                  colors: [Colors.transparent, Colors.black87],
                                   stops: [0.4, 1],
                                 ),
                               ),

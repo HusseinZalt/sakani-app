@@ -5,10 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/gradient_header.dart';
+import '../../../../core/widgets/refresh_on_tab_visible.dart';
 import '../../data/repositories/groups_repository_impl.dart';
 import '../../domain/entities/group_invitation.dart';
 import '../../domain/entities/student_group.dart';
@@ -75,6 +77,14 @@ class _GroupsViewState extends State<_GroupsView> {
     final code = _joinCodeController.text.trim();
     if (code.isEmpty) return;
 
+    final confirmed = await confirmAction(
+      context,
+      title: 'إرسال طلب انضمام',
+      message: 'هل تريد إرسال طلب انضمام للغروب بالكود "$code"؟',
+      confirmLabel: 'إرسال',
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() => _isSubmitting = true);
     final result = await cubit.joinGroupByCode(code);
     if (!mounted) return;
@@ -105,28 +115,13 @@ class _GroupsViewState extends State<_GroupsView> {
   }
 
   Future<void> _handleLeaveGroup(GroupsCubit cubit) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('مغادرة الغروب'),
-            content: const Text('هل أنت متأكد أنك تريد مغادرة الغروب؟'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('إلغاء'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text(
-                  'مغادرة',
-                  style: TextStyle(color: AppColors.error),
-                ),
-              ),
-            ],
-          ),
+    final confirmed = await confirmAction(
+      context,
+      title: 'مغادرة الغروب',
+      message: 'هل أنت متأكد أنك تريد مغادرة الغروب؟',
+      confirmLabel: 'مغادرة',
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     final result = await cubit.leaveGroup();
     if (!mounted) return;
@@ -139,77 +134,80 @@ class _GroupsViewState extends State<_GroupsView> {
   Widget build(BuildContext context) {
     final myId = context.watch<UserSessionCubit>().state?.id;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          const GradientHeader(
-            title: 'الغروبات',
-            subtitle: 'إدارة غروبك وطلبات الانضمام',
-          ),
-          Expanded(
-            child: BlocBuilder<GroupsCubit, GroupsState>(
-              builder: (context, state) {
-                final cubit = context.read<GroupsCubit>();
+    return RefreshOnTabVisible(
+      onVisible: () => context.read<GroupsCubit>().fetchMyGroup(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Column(
+          children: [
+            const GradientHeader(
+              title: 'الغروبات',
+              subtitle: 'إدارة غروبك وطلبات الانضمام',
+            ),
+            Expanded(
+              child: BlocBuilder<GroupsCubit, GroupsState>(
+                builder: (context, state) {
+                  final cubit = context.read<GroupsCubit>();
 
-                return switch (state) {
-                  GroupsInitial() || GroupsLoading() => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  GroupsFailure(:final failure) => _ErrorView(
-                    message: failure.message,
-                    onRetry: cubit.fetchMyGroup,
-                  ),
-                  GroupsSuccess(:final myGroup) => RefreshIndicator(
-                    onRefresh: cubit.fetchMyGroup,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                      children: [
-                        if (myGroup != null) ...[
-                          _MyGroupCard(
-                            group: myGroup,
-                            myId: myId,
-                            onLeave: () => _handleLeaveGroup(cubit),
-                          ),
-                          if (myGroup.isLeader(myId)) ...[
-                            const SizedBox(height: 24),
-                            _PendingInvitationsSection(
-                              invitations:
-                                  myGroup.pendingInvitations
-                                      .where(
-                                        (i) =>
-                                            i.status ==
-                                            InvitationStatus.pending,
-                                      )
-                                      .toList(),
-                              onRespond:
-                                  (invitation, approve) => _handleRespond(
-                                    cubit,
-                                    invitation,
-                                    approve,
-                                  ),
+                  return switch (state) {
+                    GroupsInitial() || GroupsLoading() => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    GroupsFailure(:final failure) => _ErrorView(
+                      message: failure.message,
+                      onRetry: cubit.fetchMyGroup,
+                    ),
+                    GroupsSuccess(:final myGroup) => RefreshIndicator(
+                      onRefresh: cubit.fetchMyGroup,
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                        children: [
+                          if (myGroup != null) ...[
+                            _MyGroupCard(
+                              group: myGroup,
+                              myId: myId,
+                              onLeave: () => _handleLeaveGroup(cubit),
+                            ),
+                            if (myGroup.isLeader(myId)) ...[
+                              const SizedBox(height: 24),
+                              _PendingInvitationsSection(
+                                invitations:
+                                    myGroup.pendingInvitations
+                                        .where(
+                                          (i) =>
+                                              i.status ==
+                                              InvitationStatus.pending,
+                                        )
+                                        .toList(),
+                                onRespond:
+                                    (invitation, approve) => _handleRespond(
+                                      cubit,
+                                      invitation,
+                                      approve,
+                                    ),
+                              ),
+                            ],
+                          ] else ...[
+                            _NoGroupCard(
+                              isLoading: _isSubmitting,
+                              onCreate: () => _handleCreateGroup(cubit),
+                            ),
+                            const SizedBox(height: 16),
+                            _JoinByCodeCard(
+                              controller: _joinCodeController,
+                              isLoading: _isSubmitting,
+                              onJoin: () => _handleJoinByCode(cubit),
                             ),
                           ],
-                        ] else ...[
-                          _NoGroupCard(
-                            isLoading: _isSubmitting,
-                            onCreate: () => _handleCreateGroup(cubit),
-                          ),
-                          const SizedBox(height: 16),
-                          _JoinByCodeCard(
-                            controller: _joinCodeController,
-                            isLoading: _isSubmitting,
-                            onJoin: () => _handleJoinByCode(cubit),
-                          ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                };
-              },
+                  };
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -477,10 +475,7 @@ class _PendingInvitationsSection extends StatelessWidget {
             if (invitations.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.error,
                   borderRadius: BorderRadius.circular(AppRadius.full),
@@ -684,9 +679,9 @@ class _JoinByCodeCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'سيبقى طلبك بانتظار موافقة قائد الغروب.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           Row(

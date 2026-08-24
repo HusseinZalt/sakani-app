@@ -10,6 +10,7 @@ import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/custom_chip.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/gradient_header.dart';
+import '../../../../core/widgets/refresh_on_tab_visible.dart';
 import '../../data/repositories/housing_request_repository_impl.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_document.dart';
@@ -28,8 +29,9 @@ class HousingRequestScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create:
-          (_) => HousingRequestCubit(HousingRequestRepositoryImpl())
-            ..fetchMyRequest(),
+          (_) =>
+              HousingRequestCubit(HousingRequestRepositoryImpl())
+                ..fetchMyRequest(),
       child: const _HousingRequestView(),
     );
   }
@@ -40,59 +42,64 @@ class _HousingRequestView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          const GradientHeader(
-            title: 'طلب السكن',
-            subtitle: 'تقديم ومتابعة طلب السكن الجامعي',
-          ),
-          Expanded(
-            child: BlocConsumer<HousingRequestCubit, HousingRequestState>(
-              listener: (context, state) {
-                if (state is HousingRequestFailure) {
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(content: Text(state.failure.message)),
-                    );
-                }
-              },
-              builder: (context, state) {
-                return switch (state) {
-                  HousingRequestLoading() => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  HousingRequestFailure() => Center(
-                    child: OutlinedButton(
-                      onPressed:
-                          () =>
-                              context
-                                  .read<HousingRequestCubit>()
-                                  .fetchMyRequest(),
-                      child: const Text('إعادة المحاولة'),
-                    ),
-                  ),
-                  HousingRequestCycleClosed() => const _CycleClosedView(),
-                  HousingRequestEmpty(:final governorates) => _RequestFormView(
-                    governorates: governorates,
-                  ),
-                  HousingRequestSubmitting() => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  HousingRequestSubmitted(:final request, :final governorates) =>
-                    request.status == HousingRequestStatus.needsRevision
-                        ? _RequestFormView(
-                          governorates: governorates,
-                          existingRequest: request,
-                        )
-                        : _StatusView(request: request),
-                };
-              },
+    return RefreshOnTabVisible(
+      onVisible: () => context.read<HousingRequestCubit>().fetchMyRequest(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Column(
+          children: [
+            const GradientHeader(
+              title: 'طلب السكن',
+              subtitle: 'تقديم ومتابعة طلب السكن الجامعي',
             ),
-          ),
-        ],
+            Expanded(
+              child: BlocConsumer<HousingRequestCubit, HousingRequestState>(
+                listener: (context, state) {
+                  if (state is HousingRequestFailure) {
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(content: Text(state.failure.message)),
+                      );
+                  }
+                },
+                builder: (context, state) {
+                  return switch (state) {
+                    HousingRequestLoading() => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    HousingRequestFailure() => Center(
+                      child: OutlinedButton(
+                        onPressed:
+                            () =>
+                                context
+                                    .read<HousingRequestCubit>()
+                                    .fetchMyRequest(),
+                        child: const Text('إعادة المحاولة'),
+                      ),
+                    ),
+                    HousingRequestCycleClosed() => const _CycleClosedView(),
+                    HousingRequestEmpty(:final governorates) =>
+                      _RequestFormView(governorates: governorates),
+                    HousingRequestSubmitting() => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    HousingRequestSubmitted(
+                      :final request,
+                      :final governorates,
+                    ) =>
+                      request.status == HousingRequestStatus.needsRevision
+                          ? _RequestFormView(
+                            governorates: governorates,
+                            existingRequest: request,
+                          )
+                          : _StatusView(request: request),
+                  };
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -109,18 +116,14 @@ class _CycleClosedView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.event_busy_rounded,
-              size: 48,
-              color: AppColors.textHint,
-            ),
+            Icon(Icons.event_busy_rounded, size: 48, color: AppColors.textHint),
             const SizedBox(height: 12),
             Text(
               'التقديم لطلبات السكن مغلق حالياً',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
@@ -209,7 +212,9 @@ class _RequestFormViewState extends State<_RequestFormView> {
     await showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xxl),
+        ),
       ),
       builder: (sheetContext) {
         return SafeArea(
@@ -294,14 +299,14 @@ class _RequestFormViewState extends State<_RequestFormView> {
       );
       return;
     }
-    if (_isPreviousResident && _previousBuildingIdController.text.trim().isEmpty) {
+    if (_isPreviousResident &&
+        _previousBuildingIdController.text.trim().isEmpty) {
       _showMessage('يرجى إدخال رقم المبنى السابق، أو إلغاء "سكنت سابقاً".');
       return;
     }
 
     final cubit = context.read<HousingRequestCubit>();
-    final gender =
-        widget.existingRequest?.gender ?? _prefilledGender;
+    final gender = widget.existingRequest?.gender ?? _prefilledGender;
     final previousBuildingId = int.tryParse(
       _previousBuildingIdController.text.trim(),
     );
@@ -321,7 +326,9 @@ class _RequestFormViewState extends State<_RequestFormView> {
         previousBuildingId: _isPreviousResident ? previousBuildingId : null,
         previousFloor: _isPreviousResident ? previousFloor : null,
         previousRoomNumber:
-            _isPreviousResident && previousRoom.isNotEmpty ? previousRoom : null,
+            _isPreviousResident && previousRoom.isNotEmpty
+                ? previousRoom
+                : null,
         specialNotes: notes.isEmpty ? null : notes,
         // فقط المستندات يلي معها بايتات محلية جديدة (استُبدلت فعلياً).
         replacedDocuments:
@@ -338,7 +345,9 @@ class _RequestFormViewState extends State<_RequestFormView> {
         previousBuildingId: _isPreviousResident ? previousBuildingId : null,
         previousFloor: _isPreviousResident ? previousFloor : null,
         previousRoomNumber:
-            _isPreviousResident && previousRoom.isNotEmpty ? previousRoom : null,
+            _isPreviousResident && previousRoom.isNotEmpty
+                ? previousRoom
+                : null,
         specialNotes: notes.isEmpty ? null : notes,
         documents: _documents.values.toList(),
       );
@@ -460,7 +469,8 @@ class _RequestFormViewState extends State<_RequestFormView> {
               children: [
                 SwitchListTile(
                   value: _hasSpecialNeeds,
-                  onChanged: (value) => setState(() => _hasSpecialNeeds = value),
+                  onChanged:
+                      (value) => setState(() => _hasSpecialNeeds = value),
                   title: const Text('لدي احتياجات خاصة'),
                   activeColor: AppColors.primary,
                 ),
@@ -543,10 +553,11 @@ class _RequestFormViewState extends State<_RequestFormView> {
                   _DocumentSlot(
                     type: type,
                     document: _documents[type],
-                    editable: !_isEditMode || _documents[type] == null
-                        ? true
-                        : _documents[type]!.reviewStatus !=
-                            DocumentReviewStatus.approved,
+                    editable:
+                        !_isEditMode || _documents[type] == null
+                            ? true
+                            : _documents[type]!.reviewStatus !=
+                                DocumentReviewStatus.approved,
                     onTap: () => _pickDocument(type),
                   ),
                 ],
@@ -636,8 +647,7 @@ class _DocumentSlot extends StatelessWidget {
                   document != null
                       ? Icons.check_circle_outline_rounded
                       : Icons.description_outlined,
-                  color:
-                      document != null ? statusColor : AppColors.primary,
+                  color: document != null ? statusColor : AppColors.primary,
                   size: 20,
                 ),
               const SizedBox(width: 10),
