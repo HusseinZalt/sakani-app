@@ -83,6 +83,7 @@ class AppNotificationModel extends AppNotification {
       case 'complaint':
         return 'accent';
       case 'group':
+      case 'group_join_request':
         return 'info';
       case 'maintenance':
         return 'warning';

@@ -12,8 +12,11 @@ class HomeCubit extends Cubit<HomeState> {
 
   final HomeRepository _repository;
 
+  /// عند استدعاء متكرر (مثلاً عند العودة للتبويب) وسبق أن ظهرت بيانات
+  /// ناجحة، لا نُظهر شاشة تحميل كاملة من جديد — نُبقي المحتوى الحالي
+  /// ونستبدله بهدوء فقط عند وصول النتيجة الجديدة.
   Future<void> fetchDashboard() async {
-    emit(const HomeLoading());
+    if (state is! HomeSuccess) emit(const HomeLoading());
 
     final result = await _repository.fetchDashboard();
 

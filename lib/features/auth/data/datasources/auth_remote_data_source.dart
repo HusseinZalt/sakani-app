@@ -178,6 +178,14 @@ class AuthRemoteDataSource {
         lower.contains('account not found')) {
       return 'لا يوجد حساب مرتبط بهذا البريد الإلكتروني.';
     }
+    if (lower.contains('ban')) {
+      return 'تم حظر هذا الحساب من قبل الإدارة.';
+    }
+    if (lower.contains('not verified') ||
+        lower.contains('unverified') ||
+        lower.contains('verify your email')) {
+      return 'هذا الحساب غير مفعّل بعد. يرجى تأكيد رمز التفعيل أولاً.';
+    }
     if (lower == 'validation failed') {
       final codeError = errors?.firstWhere(
         (err) => err is String && err.toLowerCase().startsWith('code:'),

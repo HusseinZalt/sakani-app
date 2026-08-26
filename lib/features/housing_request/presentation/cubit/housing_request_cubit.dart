@@ -18,8 +18,17 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
 
   final HousingRequestRepository _repository;
 
+  /// عند استدعاء متكرر (مثلاً عند العودة للتبويب) وسبق أن ظهرت بيانات
+  /// محدَّدة، لا نُظهر شاشة تحميل كاملة من جديد — نُبقي المحتوى الحالي
+  /// ونستبدله بهدوء فقط عند وصول النتيجة الجديدة.
   Future<void> fetchMyRequest() async {
-    emit(const HousingRequestLoading());
+    final hasContent = switch (state) {
+      HousingRequestCycleClosed() ||
+      HousingRequestEmpty() ||
+      HousingRequestSubmitted() => true,
+      _ => false,
+    };
+    if (!hasContent) emit(const HousingRequestLoading());
 
     final cycleResult = await _repository.fetchCurrentCycle();
     final HousingCycle? cycle;

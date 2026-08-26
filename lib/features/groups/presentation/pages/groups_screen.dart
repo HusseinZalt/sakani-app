@@ -567,7 +567,7 @@ class _InvitationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'طلب انضمام طالب',
+                  invitation.studentName ?? 'طلب انضمام طالب',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),

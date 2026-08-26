@@ -23,19 +23,31 @@ enum InvitationStatus {
 /// طلب انضمام طالب لغروب — الطالب هو من يبادر بالطلب (سحب وليس دفعاً)
 /// عبر الانضمام بالكود، وقائد الغروب هو من يوافق/يرفض. تظهر هذه القائمة
 /// فقط للقائد ضمن غروبه.
+///
+/// [studentName] مؤكَّد بالاختبار الفعلي (2026-08-24): الباك إند صار
+/// يرجعه ضمن `GroupInvitationDto` (`invitedStudentName`) بعد ما كان
+/// غائباً تماماً بالبداية — يبقى نفس الحقل اختيارياً بالتطبيق تحسباً.
 class GroupInvitation extends Equatable {
   const GroupInvitation({
     required this.id,
     required this.invitedStudentId,
     required this.status,
     required this.sentAt,
+    this.studentName,
   });
 
   final int id;
   final String invitedStudentId;
   final InvitationStatus status;
   final DateTime sentAt;
+  final String? studentName;
 
   @override
-  List<Object?> get props => [id, invitedStudentId, status, sentAt];
+  List<Object?> get props => [
+    id,
+    invitedStudentId,
+    status,
+    sentAt,
+    studentName,
+  ];
 }

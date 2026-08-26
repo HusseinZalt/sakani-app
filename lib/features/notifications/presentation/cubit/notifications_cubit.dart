@@ -25,11 +25,14 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// تعليم إشعار كمقروء (تحديث تفاؤلي فوري للحالة المحلية، دون انتظار
   /// استجابة الخادم، لأن هذه عملية غير حرجة ولا تحتاج مؤشر تحميل).
+  /// إذا فشل الطلب في الخادم، نعود إلى الحالة السابقة فوراً حتى لا تبقى
+  /// واجهة المستخدم غير متزامنة مع الواقع.
   Future<void> markAsRead(String id) async {
     final current = state;
     if (current is! NotificationsSuccess) return;
     if (!current.notifications.any((n) => n.id == id && n.isUnread)) return;
 
+    final original = current.notifications;
     emit(
       NotificationsSuccess([
         for (final notification in current.notifications)
@@ -40,6 +43,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       ]),
     );
 
-    await _repository.markAsRead(id);
+    final result = await _repository.markAsRead(id);
+    if (result.isFailure) {
+      emit(NotificationsSuccess(original));
+    }
   }
 }

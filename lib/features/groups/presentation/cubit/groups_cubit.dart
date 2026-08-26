@@ -11,8 +11,11 @@ class GroupsCubit extends Cubit<GroupsState> {
 
   final GroupsRepository _repository;
 
+  /// عند استدعاء متكرر (مثلاً عند العودة للتبويب) وسبق أن ظهرت بيانات
+  /// ناجحة، لا نُظهر شاشة تحميل كاملة من جديد — نُبقي المحتوى الحالي
+  /// ونستبدله بهدوء فقط عند وصول النتيجة الجديدة.
   Future<void> fetchMyGroup() async {
-    emit(const GroupsLoading());
+    if (state is! GroupsSuccess) emit(const GroupsLoading());
 
     final result = await _repository.fetchMyGroup();
 
@@ -27,11 +30,12 @@ class GroupsCubit extends Cubit<GroupsState> {
   Future<ApiResult<void>> createGroup({String? description}) async {
     final result = await _repository.createGroup(description: description);
     if (result.isSuccess) await fetchMyGroup();
-    return result.map((group) {});
+    return result.map((_) {});
   }
 
   Future<ApiResult<void>> joinGroupByCode(String code) async {
     final result = await _repository.joinGroupByCode(code);
+    if (result.isSuccess) await fetchMyGroup();
     return result;
   }
 

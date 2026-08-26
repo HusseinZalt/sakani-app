@@ -109,40 +109,57 @@ class _MaintenanceListViewState extends State<_MaintenanceListView> {
                               context
                                   .read<MaintenanceListCubit>()
                                   .fetchRequests(),
-                      child: ListView(
+                      child: ListView.builder(
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                        children: [
-                          CustomButton(
-                            label: 'طلب خدمة جديدة',
-                            icon: Icons.add_rounded,
-                            onPressed: () => _openCreateScreen(context),
-                          ),
-                          const SizedBox(height: 20),
-                          const _CategoryGrid(),
-                          const SizedBox(height: 24),
-                          Text(
-                            'طلباتي السابقة',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 12),
-                          if (requests.isEmpty)
-                            const _EmptyView()
-                          else
-                            for (final request in requests) ...[
-                              _RequestCard(
-                                request: request,
-                                isCancelling: _cancellingIds.contains(
-                                  request.id,
-                                ),
-                                onCancel:
-                                    request.status == 'completed'
-                                        ? null
-                                        : () => _handleCancel(context, request),
+                        itemCount: requests.isEmpty ? 4 : requests.length + 3,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return CustomButton(
+                              label: 'طلب خدمة جديدة',
+                              icon: Icons.add_rounded,
+                              onPressed: () => _openCreateScreen(context),
+                            );
+                          }
+                          if (index == 1) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 20, bottom: 0),
+                              child: _CategoryGrid(),
+                            );
+                          }
+                          if (index == 2) {
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                top: 24,
+                                bottom: 12,
                               ),
-                              const SizedBox(height: 12),
-                            ],
-                        ],
+                              child: Text(
+                                'طلباتي السابقة',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            );
+                          }
+                          if (requests.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 12),
+                              child: _EmptyView(),
+                            );
+                          }
+
+                          final requestIndex = index - 3;
+                          final request = requests[requestIndex];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _RequestCard(
+                              request: request,
+                              isCancelling: _cancellingIds.contains(request.id),
+                              onCancel:
+                                  request.status == 'completed'
+                                      ? null
+                                      : () => _handleCancel(context, request),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   };

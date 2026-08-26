@@ -57,6 +57,7 @@ class _NotificationsViewState extends State<_NotificationsView> {
       case 'housing':
         context.goNamed(AppRoutes.housingRequest);
       case 'group':
+      case 'group_join_request':
         context.goNamed(AppRoutes.groups);
       case 'profile':
         context.goNamed(AppRoutes.profile);

@@ -1,4 +1,5 @@
 import '../../../housing_request/data/datasources/housing_request_remote_data_source.dart';
+import '../../../housing_request/data/models/housing_request_model.dart';
 import '../../../housing_request/domain/entities/housing_request.dart';
 import '../../../notifications/data/datasources/notifications_remote_data_source.dart';
 import '../models/home_dashboard_model.dart';
@@ -17,15 +18,28 @@ import 'ads_remote_data_source.dart';
 /// الرئيسية يقرأ الاسم مباشرة من [UserSessionCubit] وليس من هنا).
 /// ==================================================================
 class HomeRemoteDataSource {
+  HomeRemoteDataSource({
+    HousingRequestRemoteDataSource? housingDataSource,
+    AdsRemoteDataSource? adsDataSource,
+    NotificationsRemoteDataSource? notificationsDataSource,
+  }) : _housingDataSource =
+           housingDataSource ?? HousingRequestRemoteDataSource(),
+       _adsDataSource = adsDataSource ?? AdsRemoteDataSource(),
+       _notificationsDataSource =
+           notificationsDataSource ?? NotificationsRemoteDataSource();
+
   static const _activitiesLimit = 5;
+
+  final HousingRequestRemoteDataSource _housingDataSource;
+  final AdsRemoteDataSource _adsDataSource;
+  final NotificationsRemoteDataSource _notificationsDataSource;
 
   Future<HomeDashboardModel> fetchDashboard() async {
     // حالة السكن مُشتقة من طلب السكن الفعلي للمستخدم (وليست قيمة ثابتة)،
     // حتى تبقى الرئيسية متسقة مع ما قدّمه المستخدم فعلياً بدل الادّعاء
     // الدائم بأنه مقبول في غرفة A-204 بغض النظر عن الواقع.
-    final housingDataSource = HousingRequestRemoteDataSource();
-    final myRequest = await housingDataSource.fetchMyRequest();
-    final ads = await AdsRemoteDataSource().fetchActiveAds();
+    final myRequest = await _safeFetchMyRequest(_housingDataSource);
+    final ads = await _safeFetchAds(_adsDataSource);
 
     final Map<String, dynamic> housingStatus;
     if (myRequest == null) {
@@ -35,7 +49,7 @@ class HomeRemoteDataSource {
         null => {'status': 'pending'},
         AdmissionDecisionStatus.accepted => {
           'status': 'accepted',
-          ...await _fetchAllocationFields(housingDataSource),
+          ...await _fetchAllocationFields(_housingDataSource),
         },
         AdmissionDecisionStatus.rejected => {'status': 'rejected'},
         AdmissionDecisionStatus.pending ||
@@ -54,8 +68,28 @@ class HomeRemoteDataSource {
       studentName: baseJson.studentName,
       housingStatus: baseJson.housingStatus,
       announcements: ads,
-      activities: await _fetchRecentActivities(),
+      activities: await _fetchRecentActivities(_notificationsDataSource),
     );
+  }
+
+  Future<HousingRequestModel?> _safeFetchMyRequest(
+    HousingRequestRemoteDataSource dataSource,
+  ) async {
+    try {
+      return await dataSource.fetchMyRequest();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<AnnouncementModel>> _safeFetchAds(
+    AdsRemoteDataSource dataSource,
+  ) async {
+    try {
+      return await dataSource.fetchActiveAds();
+    } catch (_) {
+      return const [];
+    }
   }
 
   /// تفاصيل الغرفة الفعلية بعد القبول، إن وُجدت — التخصيص إجراء إداري
@@ -76,10 +110,12 @@ class HomeRemoteDataSource {
     }
   }
 
-  Future<List<ActivityLogItemModel>> _fetchRecentActivities() async {
+  Future<List<ActivityLogItemModel>> _fetchRecentActivities(
+    NotificationsRemoteDataSource notificationsDataSource,
+  ) async {
     try {
       final notifications =
-          await NotificationsRemoteDataSource().fetchNotifications()
+          await notificationsDataSource.fetchNotifications()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return notifications
           .take(_activitiesLimit)

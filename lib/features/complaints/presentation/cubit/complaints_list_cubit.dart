@@ -11,7 +11,10 @@ class ComplaintsListCubit extends Cubit<ComplaintsListState> {
   final ComplaintsRepository _repository;
 
   Future<void> fetchComplaints() async {
-    emit(const ComplaintsListLoading());
+    // لا تُصفَّر القائمة المعروضة فعلياً بمؤشر تحميل كامل الشاشة عند
+    // التحديث بالسحب أو بعد إضافة شكوى جديدة، لتفادي وميض/إخفاء المحتوى
+    // الظاهر بالفعل أثناء طلب خلفي.
+    if (state is! ComplaintsListSuccess) emit(const ComplaintsListLoading());
 
     final result = await _repository.fetchComplaints();
 

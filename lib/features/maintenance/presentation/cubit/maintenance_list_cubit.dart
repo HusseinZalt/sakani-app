@@ -27,21 +27,24 @@ class MaintenanceListCubit extends Cubit<MaintenanceListState> {
   }
 
   /// إلغاء طلب صيانة واحد. تُرجع [ApiResult] للسماح للشاشة بعرض رسالة
-  /// تنبيهية مناسبة (نجاح/فشل) دون التأثير على بقية القائمة المعروضة.
+  /// تنبيهية مناسبة (نجاح/فشل) مع إعادة الحالة الأصلية عند الفشل حتى تبقى
+  /// القائمة متوافقة مع الواقع وعدم إظهار حالة غير صحيحة للمستخدم.
   Future<ApiResult<void>> cancelRequest(String requestId) async {
-    final result = await _repository.cancelRequest(requestId);
+    final current = state;
+    if (current is! MaintenanceListSuccess) {
+      return await _repository.cancelRequest(requestId);
+    }
 
-    if (result case ApiSuccess<void>()) {
-      final current = state;
-      if (current is MaintenanceListSuccess) {
-        emit(
-          MaintenanceListSuccess(
-            current.requests
-                .where((request) => request.id != requestId)
-                .toList(),
-          ),
-        );
-      }
+    final original = current.requests;
+    emit(
+      MaintenanceListSuccess(
+        current.requests.where((request) => request.id != requestId).toList(),
+      ),
+    );
+
+    final result = await _repository.cancelRequest(requestId);
+    if (result.isFailure) {
+      emit(MaintenanceListSuccess(original));
     }
 
     return result;

@@ -8,6 +8,7 @@ class GroupInvitationModel extends GroupInvitation {
     required super.invitedStudentId,
     required super.status,
     required super.sentAt,
+    super.studentName,
   });
 
   factory GroupInvitationModel.fromJson(Map<String, dynamic> json) {
@@ -16,6 +17,7 @@ class GroupInvitationModel extends GroupInvitation {
       invitedStudentId: json['invitedStudentId'] as String? ?? '',
       status: InvitationStatus.fromApiValue(json['status'] as int? ?? 0),
       sentAt: parseUtcDateTime(json['sentAt'] as String),
+      studentName: json['invitedStudentName'] as String?,
     );
   }
 }

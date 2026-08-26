@@ -204,6 +204,7 @@ class _RegisterViewState extends State<_RegisterView> {
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
       if (file == null) return;
       final bytes = await file.readAsBytes();
+      if (!mounted) return;
       onPicked(bytes);
     } catch (_) {
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();

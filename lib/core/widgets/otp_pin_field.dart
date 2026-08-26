@@ -38,12 +38,22 @@ class OtpPinField extends StatefulWidget {
 class _OtpPinFieldState extends State<OtpPinField> {
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
+  // مفاتيح تركيز منفصلة لكل [KeyboardListener] (تعترض ضغطة "حذف" الخام)،
+  // مُنشأة مرة واحدة هنا بدل داخل build() — إنشاء FocusNode جديد بكل
+  // استدعاء build (كما كان سابقاً) يترك عقدة التركيز السابقة معلّقة بلا
+  // dispose() في كل مرة تُعاد فيها بناء الودجت (مثال: تبديل hasError بعد
+  // فشل التحقق)، ما يُسرّب عقدة تركيز جديدة مع كل محاولة تحقق فاشلة.
+  late final List<FocusNode> _keyboardFocusNodes;
 
   @override
   void initState() {
     super.initState();
     _controllers = List.generate(widget.length, (_) => TextEditingController());
     _focusNodes = List.generate(widget.length, (_) => FocusNode());
+    _keyboardFocusNodes = List.generate(
+      widget.length,
+      (_) => FocusNode(skipTraversal: true),
+    );
   }
 
   @override
@@ -52,6 +62,9 @@ class _OtpPinFieldState extends State<OtpPinField> {
       controller.dispose();
     }
     for (final node in _focusNodes) {
+      node.dispose();
+    }
+    for (final node in _keyboardFocusNodes) {
       node.dispose();
     }
     super.dispose();
@@ -119,7 +132,7 @@ class _OtpPinFieldState extends State<OtpPinField> {
             width: 52,
             height: 60,
             child: KeyboardListener(
-              focusNode: FocusNode(skipTraversal: true),
+              focusNode: _keyboardFocusNodes[index],
               onKeyEvent: (event) {
                 if (event is KeyDownEvent &&
                     event.logicalKey == LogicalKeyboardKey.backspace) {

@@ -33,9 +33,7 @@ void main() async {
   // أُزيلت نهائياً من خدمة الإشعارات؛ لا حاجة لأي تسجيل إضافي هنا).
   if (!kIsWeb) {
     unawaited(
-      PushNotificationService.instance.initialize().catchError((
-        Object error,
-      ) {
+      PushNotificationService.instance.initialize().catchError((Object error) {
         debugPrint('تعذّر تهيئة خدمة الإشعارات: $error');
       }),
     );

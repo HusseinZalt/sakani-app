@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -353,11 +354,13 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
                         fit: StackFit.expand,
                         children: [
                           if (imageUrl != null)
-                            Image.network(
-                              imageUrl,
+                            CachedNetworkImage(
+                              imageUrl: imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) =>
+                              placeholder:
+                                  (context, url) => const SizedBox.shrink(),
+                              errorWidget:
+                                  (context, url, error) =>
                                       const SizedBox.shrink(),
                             ),
                           if (imageUrl != null)

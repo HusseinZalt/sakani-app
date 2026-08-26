@@ -246,7 +246,12 @@ class _ResendSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (!state.canResend) {
+    // يُبنى هذا الشرط على العدّاد فقط (وليس على `state.canResend`، الذي
+    // يشترط أيضاً `!isResending`)؛ فبمجرد بدء طلب إعادة الإرسال يصبح
+    // `isResending` صحيحاً و`canResend` خاطئاً، فلو استُخدم هنا لبقيت هذه
+    // الفرع تعرض نص العدّاد المتجمّد "00:00" طوال مدة الطلب بدل تمرير
+    // العرض إلى الزر أدناه الذي يُظهر مؤشر التحميل فعلياً.
+    if (state.secondsRemaining > 0) {
       return Center(
         child: RichText(
           text: TextSpan(

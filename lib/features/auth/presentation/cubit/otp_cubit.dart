@@ -45,6 +45,10 @@ class OtpCubit extends Cubit<OtpState> {
   }
 
   Future<void> verifyOtp(String code) async {
+    // بدون هذا الحرس، يمكن لصق/إكمال الرمز مرة أخرى (عبر `onCompleted` في
+    // حقل الرمز، الذي لا يُعطَّل أثناء التحقق) بينما طلب تحقق سابق ما زال
+    // قيد التنفيذ، فيُرسَل طلبان متزامنان تتسابق نتائجهما على الحالة.
+    if (state.status == OtpStatus.verifying) return;
     emit(state.copyWith(status: OtpStatus.verifying, clearError: true));
 
     final result = await _authRepository.verifyEmail(
