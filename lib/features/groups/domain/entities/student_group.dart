@@ -25,10 +25,13 @@ enum HousingGroupStatus {
 /// غروب سكن جامعي: مجموعة طلاب يرغبون بمشاركة نفس الوحدة السكنية.
 ///
 /// ملاحظة: `memberStudentIds` معرّفات فقط بلا أسماء (الباك إند لسا ما
-/// بيرجع أسماء الأعضاء الفعليين — تُعرض بواجهة التطبيق كـ"أنت"/"عضو").
-/// **بخلاف ذلك**، طلبات الانضمام المعلّقة (`pendingInvitations`) صار
-/// معها اسم حقيقي (`GroupInvitation.studentName`) بعد إصلاح من الباك
-/// إند — مؤكَّد بالاختبار الفعلي (2026-08-24).
+/// بيرجع أسماء الأعضاء الفعليين). طلبات الانضمام المعلّقة
+/// (`pendingInvitations`) بالمقابل صار معها اسم حقيقي
+/// (`GroupInvitation.studentName`) بعد إصلاح من الباك إند — مؤكَّد
+/// بالاختبار الفعلي (2026-08-24). التطبيق يستغل هذا: يخزّن محلياً كل اسم
+/// يمرّ أمام القائد ضمن طلب انضمام (`GroupMemberNamesCache`)، ويستخدمه
+/// لعرض اسم حقيقي بقائمة الأعضاء بدل "عضو N" — يعمل فقط على جهاز القائد،
+/// ولأعضاء انضمّوا بعد أول مرة يُفعَّل فيها هذا التخزين.
 class StudentGroup extends Equatable {
   const StudentGroup({
     required this.id,
@@ -58,7 +61,8 @@ class StudentGroup extends Equatable {
 
   bool get isFull => memberCount >= maxMembers;
 
-  bool isLeader(String? studentId) => studentId != null && studentId == leaderId;
+  bool isLeader(String? studentId) =>
+      studentId != null && studentId == leaderId;
 
   @override
   List<Object?> get props => [
