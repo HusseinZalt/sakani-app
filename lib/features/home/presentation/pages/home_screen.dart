@@ -185,11 +185,15 @@ class _HomeHeader extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
             child: Row(
               children: [
-                ProfileAvatar(
-                  avatarUrl: user?.avatarUrl,
-                  radius: 26,
-                  backgroundColor: AppColors.white.withValues(alpha: 0.18),
-                  iconColor: AppColors.white,
+                InkWell(
+                  borderRadius: BorderRadius.circular(26),
+                  onTap: () => context.pushNamed(AppRoutes.editProfile),
+                  child: ProfileAvatar(
+                    avatarUrl: user?.avatarUrl,
+                    radius: 26,
+                    backgroundColor: AppColors.white.withValues(alpha: 0.18),
+                    iconColor: AppColors.white,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

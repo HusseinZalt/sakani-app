@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
+import '../constants/app_radius.dart';
 
 /// رأس متدرج (Gradient Header) موحّد، مطابق لـ `.m-header` في التصميم
 /// المعتمد، يُستخدم بدل AppBar التقليدي في معظم شاشات التطبيق الرئيسية.
@@ -36,47 +37,53 @@ class GradientHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding),
-          child: Row(
-            children: [
-              if (onBack != null) ...[
-                _CircleIconButton(icon: Icons.arrow_forward, onTap: onBack!),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style:
-                          titleStyle ??
-                          theme.textTheme.titleLarge?.copyWith(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.only(
+        bottomLeft: Radius.circular(AppRadius.xxl),
+        bottomRight: Radius.circular(AppRadius.xxl),
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding),
+            child: Row(
+              children: [
+                if (onBack != null) ...[
+                  _CircleIconButton(icon: Icons.arrow_forward, onTap: onBack!),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        subtitle!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.white.withValues(alpha: 0.85),
-                          fontWeight: FontWeight.w500,
-                        ),
+                        title,
+                        style:
+                            titleStyle ??
+                            theme.textTheme.titleLarge?.copyWith(
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.white.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              if (trailing != null) trailing!,
-            ],
+                if (trailing != null) trailing!,
+              ],
+            ),
           ),
         ),
       ),
