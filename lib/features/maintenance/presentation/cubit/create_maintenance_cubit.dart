@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/network/api_result.dart';
+import '../../../../core/utils/image_resize.dart';
 import '../../domain/entities/maintenance_request.dart';
 import '../../domain/repositories/maintenance_repository.dart';
 import 'create_maintenance_state.dart';
@@ -18,15 +19,10 @@ class CreateMaintenanceCubit extends Cubit<CreateMaintenanceState> {
 
   Future<void> pickImage(ImageSource source) async {
     try {
-      final pickedFile = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
+      final pickedFile = await _imagePicker.pickImage(source: source);
       if (pickedFile == null) return;
 
-      final bytes = await pickedFile.readAsBytes();
+      final bytes = await compressImageBytes(await pickedFile.readAsBytes());
       emit(
         state.copyWith(
           pickedImageBytes: bytes,

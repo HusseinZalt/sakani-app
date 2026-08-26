@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/utils/image_resize.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_chip.dart';
 import '../../../../core/widgets/custom_text_field.dart';
@@ -195,15 +196,10 @@ class _RegisterViewState extends State<_RegisterView> {
     ValueChanged<Uint8List> onPicked,
   ) async {
     try {
-      final file = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
+      final file = await _imagePicker.pickImage(source: source);
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
       if (file == null) return;
-      final bytes = await file.readAsBytes();
+      final bytes = await compressImageBytes(await file.readAsBytes());
       if (!mounted) return;
       onPicked(bytes);
     } catch (_) {

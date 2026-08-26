@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
+import '../../../../core/utils/image_resize.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_chip.dart';
 import '../../../../core/widgets/custom_text_field.dart';
@@ -54,13 +55,11 @@ class _AddComplaintViewState extends State<_AddComplaintView> {
 
   Future<void> _addImages() async {
     try {
-      final files = await _imagePicker.pickMultiImage(
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
+      final files = await _imagePicker.pickMultiImage();
       if (files.isEmpty) return;
-      final bytesList = await Future.wait(files.map((f) => f.readAsBytes()));
+      final bytesList = await Future.wait(
+        files.map((f) async => compressImageBytes(await f.readAsBytes())),
+      );
       if (!mounted) return;
       setState(() => _images.addAll(bytesList));
     } catch (_) {

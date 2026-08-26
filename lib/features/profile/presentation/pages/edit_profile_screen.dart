@@ -9,6 +9,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/utils/avatar_image.dart';
+import '../../../../core/utils/image_resize.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/gradient_header.dart';
@@ -112,15 +113,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ImageSource source,
   ) async {
     try {
-      final file = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
+      final file = await _imagePicker.pickImage(source: source);
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
       if (file == null) return;
-      final bytes = await file.readAsBytes();
+      final bytes = await compressImageBytes(await file.readAsBytes());
       if (mounted) setState(() => _newAvatarBytes = bytes);
     } catch (_) {
       if (sheetContext.mounted) Navigator.of(sheetContext).pop();

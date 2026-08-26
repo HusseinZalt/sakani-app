@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/utils/image_resize.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/custom_chip.dart';
@@ -248,10 +249,7 @@ class _RequestFormViewState extends State<_RequestFormView> {
                   color: AppColors.primary,
                 ),
                 title: const Text('التقاط صورة بالكاميرا'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _pickFrom(type, ImageSource.camera);
-                },
+                onTap: () => _pickFrom(sheetContext, type, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(
@@ -259,10 +257,7 @@ class _RequestFormViewState extends State<_RequestFormView> {
                   color: AppColors.primary,
                 ),
                 title: const Text('اختيار من المعرض'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _pickFrom(type, ImageSource.gallery);
-                },
+                onTap: () => _pickFrom(sheetContext, type, ImageSource.gallery),
               ),
               const SizedBox(height: 12),
             ],
@@ -272,16 +267,17 @@ class _RequestFormViewState extends State<_RequestFormView> {
     );
   }
 
-  Future<void> _pickFrom(HousingDocumentType type, ImageSource source) async {
+  Future<void> _pickFrom(
+    BuildContext sheetContext,
+    HousingDocumentType type,
+    ImageSource source,
+  ) async {
     try {
-      final file = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
+      final file = await _imagePicker.pickImage(source: source);
+      if (sheetContext.mounted) Navigator.of(sheetContext).pop();
       if (file == null) return;
-      final bytes = await file.readAsBytes();
+      final bytes = await compressImageBytes(await file.readAsBytes());
+      if (!mounted) return;
       setState(() {
         _documents[type] = HousingDocument(
           type: type,
@@ -290,6 +286,7 @@ class _RequestFormViewState extends State<_RequestFormView> {
         );
       });
     } catch (_) {
+      if (sheetContext.mounted) Navigator.of(sheetContext).pop();
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
