@@ -9,6 +9,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/profile_avatar.dart';
 import '../../../../core/widgets/refresh_on_tab_visible.dart';
@@ -36,6 +37,17 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // بدون هذا، هذه الشاشة لا تُعاد بناؤها أبداً عند تبديل الوضع الليلي/
+    // النهاري يدوياً من الإعدادات: فروع StatefulShellRoute.indexedStack
+    // (راجع توثيق RefreshOnTabVisible) تبقى حيّة بالذاكرة عبر Navigator
+    // بمفتاح عام مستقر، فلا يفلح إجبار إعادة بناء الشجرة كاملة من main.dart
+    // بإعادة بنائها فعلياً — بينما Scaffold.backgroundColor هنا يقرأ
+    // AppColors.background كقيمة ثابتة عادية لا تتتبعها فلاتر تلقائياً.
+    // بالاشتراك بـ ThemeController مباشرة، تُعاد بناء الشاشة فعلياً (وتُعيد
+    // قراءة القيمة المحدَّثة) فور نداء notifyListeners()، بدل الانتظار
+    // لإعادة تشغيل التطبيق بالكامل.
+    context.watch<ThemeController>();
+
     return RefreshOnTabVisible(
       onVisible: () => context.read<HomeCubit>().fetchDashboard(),
       child: Scaffold(

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
@@ -138,6 +139,10 @@ class _GroupsViewState extends State<_GroupsView> {
   @override
   Widget build(BuildContext context) {
     final myId = context.watch<UserSessionCubit>().state?.id;
+    // يفرض إعادة بناء هذه الشاشة عند تبديل الوضع الليلي/النهاري — راجع
+    // الشرح المفصَّل بـ home_screen.dart._HomeView حول سبب عدم كفاية
+    // آلية إعادة البناء الكاملة بـ main.dart لفروع StatefulShellRoute.
+    context.watch<ThemeController>();
 
     return RefreshOnTabVisible(
       onVisible: () => context.read<GroupsCubit>().fetchMyGroup(),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/notifications/notifications_badge_cubit.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../data/repositories/notifications_repository_impl.dart';
@@ -153,6 +154,11 @@ class _NotificationsViewState extends State<_NotificationsView> {
 
   @override
   Widget build(BuildContext context) {
+    // يفرض إعادة بناء هذه الشاشة عند تبديل الوضع الليلي/النهاري — راجع
+    // الشرح المفصَّل بـ home_screen.dart._HomeView حول سبب عدم كفاية
+    // آلية إعادة البناء الكاملة بـ main.dart لفروع StatefulShellRoute.
+    context.watch<ThemeController>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(

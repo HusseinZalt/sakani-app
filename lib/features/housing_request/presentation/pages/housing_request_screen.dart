@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/custom_chip.dart';
@@ -43,6 +44,11 @@ class _HousingRequestView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // يفرض إعادة بناء هذه الشاشة عند تبديل الوضع الليلي/النهاري — راجع
+    // الشرح المفصَّل بـ home_screen.dart._HomeView حول سبب عدم كفاية
+    // آلية إعادة البناء الكاملة بـ main.dart لفروع StatefulShellRoute.
+    context.watch<ThemeController>();
+
     return RefreshOnTabVisible(
       onVisible: () => context.read<HousingRequestCubit>().fetchMyRequest(),
       child: Scaffold(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/utils/avatar_image.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_card.dart';
@@ -24,6 +25,10 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<UserSessionCubit>().state;
     final theme = Theme.of(context);
+    // يفرض إعادة بناء هذه الشاشة عند تبديل الوضع الليلي/النهاري — راجع
+    // الشرح المفصَّل بـ home_screen.dart._HomeView حول سبب عدم كفاية
+    // آلية إعادة البناء الكاملة بـ main.dart لفروع StatefulShellRoute.
+    context.watch<ThemeController>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
