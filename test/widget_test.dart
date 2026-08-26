@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sakani/core/constants/app_colors.dart';
 import 'package:sakani/core/network/api_result.dart';
@@ -140,6 +141,14 @@ class _FakeMaintenanceRepository implements MaintenanceRepository {
 }
 
 void main() {
+  // بدون هذا، تعليق حقيقي (وليس فشل سريع) داخل `testWidgets` عند أول نداء
+  // SharedPreferences.getInstance() (مثال: ThemeController.load) — يختلف
+  // سلوك القناة غير المُهيّأة هون عن اختبار Dart عادي (test بدون testWidgets)
+  // الذي يفشل بسرعة بـ MissingPluginException. القيم الوهمية هون تُغني عن أي
+  // قناة منصّة حقيقية إطلاقاً.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   testWidgets('التطبيق يقلع ويعرض شاشة البداية ثم ينتقل لتسجيل الدخول', (
     WidgetTester tester,
   ) async {
