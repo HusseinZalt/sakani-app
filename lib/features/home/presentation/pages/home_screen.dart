@@ -257,11 +257,24 @@ class _AnnouncementsSwiper extends StatefulWidget {
 }
 
 class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
+  // عدد "صفحات وهمية" كبير جداً لكل دورة كاملة عبر الإعلانات، حتى يبقى
+  // التقليب التلقائي يتحرك بنفس الاتجاه دائماً (يساراً) عند إكمال دورة
+  // والعودة للإعلان الأول، بدل ما يقفز animateToPage للخلف بصرياً (من
+  // آخر إعلان مباشرة لأول واحد) لأن الفهرس الفعلي كان يرجع لـ 0 بدل
+  // الاستمرار بالتزايد.
+  static const _cyclesBeforeWrap = 5000;
+
   late final PageController _controller = PageController(
     viewportFraction: 0.86,
+    initialPage: _cyclesBeforeWrap * widget.announcements.length,
   );
-  int _currentPage = 0;
+  late int _virtualPage = _cyclesBeforeWrap * widget.announcements.length;
   Timer? _autoPlayTimer;
+
+  int get _currentPage =>
+      widget.announcements.isEmpty
+          ? 0
+          : _virtualPage % widget.announcements.length;
 
   @override
   void initState() {
@@ -272,8 +285,8 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
   @override
   void didUpdateWidget(covariant _AnnouncementsSwiper oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // إعادة التشغيل عند تغيّر عدد الإعلانات (مثلاً بعد سحب-للتحديث) حتى لا
-    // يستمر المؤقّت بالعمل على عدد صفحات لم يعد صحيحاً.
+    // إعادة التشغيل عند تغيّر عدد الإعلانات (مثلاً بعد سحب-للتحديث)، أهم
+    // شي حتى يتوقف المؤقّت لو صار في إعلان واحد بس بعد ما كان أكثر.
     if (oldWidget.announcements.length != widget.announcements.length) {
       _startAutoPlay();
     }
@@ -287,9 +300,8 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
 
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (!_controller.hasClients) return;
-      final nextPage = (_currentPage + 1) % widget.announcements.length;
       _controller.animateToPage(
-        nextPage,
+        _virtualPage + 1,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
@@ -315,10 +327,11 @@ class _AnnouncementsSwiperState extends State<_AnnouncementsSwiper> {
           height: 110,
           child: PageView.builder(
             controller: _controller,
-            itemCount: widget.announcements.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemCount: _cyclesBeforeWrap * 2 * widget.announcements.length,
+            onPageChanged: (index) => setState(() => _virtualPage = index),
             itemBuilder: (context, index) {
-              final announcement = widget.announcements[index];
+              final announcement =
+                  widget.announcements[index % widget.announcements.length];
               final isWarning = announcement.colorVariant == 'warning';
               final imageUrl = announcement.imageUrl;
 
