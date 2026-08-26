@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_result.dart';
-import '../../data/group_member_names_cache.dart';
 import '../../domain/entities/student_group.dart';
 import '../../domain/repositories/groups_repository.dart';
 import 'groups_state.dart';
@@ -22,16 +21,7 @@ class GroupsCubit extends Cubit<GroupsState> {
 
     switch (result) {
       case ApiSuccess<StudentGroup?>(:final data):
-        // كل طلب انضمام يمرّ أمام القائد (حتى لو رُفض أو قُبل لاحقاً)
-        // يحمل اسم الطالب الحقيقي — نخزّنه محلياً فور وصوله حتى يبقى
-        // معروفاً حتى بعد اختفاء الطلب من قائمة "المعلَّقة".
-        await GroupMemberNamesCache.merge({
-          for (final invitation in data?.pendingInvitations ?? const [])
-            if (invitation.studentName != null)
-              invitation.invitedStudentId: invitation.studentName!,
-        });
-        final memberNames = await GroupMemberNamesCache.load();
-        emit(GroupsSuccess(data, memberNames: memberNames));
+        emit(GroupsSuccess(data));
       case ApiFailureResult<StudentGroup?>(:final failure):
         emit(GroupsFailure(failure));
     }

@@ -32,6 +32,7 @@ class StudentGroupModel extends StudentGroup {
     required super.status,
     super.description,
     super.pendingInvitations,
+    super.memberNames,
   });
 
   /// يحوّل عنصر `HousingGroupDto` من خدمة السكن الحقيقية (ASP.NET Core،
@@ -52,6 +53,13 @@ class StudentGroupModel extends StudentGroup {
               .map(GroupInvitationModel.fromJson)
               .toList() ??
           const [],
+      memberNames: {
+        for (final member in (json['members'] as List?) ?? const [])
+          if (member is Map<String, dynamic> &&
+              member['studentId'] is String &&
+              member['name'] is String)
+            member['studentId'] as String: member['name'] as String,
+      },
     );
   }
 }

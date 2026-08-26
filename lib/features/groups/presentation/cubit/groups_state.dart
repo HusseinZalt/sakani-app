@@ -14,13 +14,9 @@ final class GroupsLoading extends GroupsState {
 }
 
 final class GroupsSuccess extends GroupsState {
-  const GroupsSuccess(this.myGroup, {this.memberNames = const {}});
+  const GroupsSuccess(this.myGroup);
 
   final StudentGroup? myGroup;
-
-  /// أسماء أعضاء معروفة محلياً (معرّف الطالب ← اسمه)، مبنية من طلبات
-  /// انضمام سابقة مرّت أمام القائد — راجع [GroupMemberNamesCache].
-  final Map<String, String> memberNames;
 }
 
 final class GroupsFailure extends GroupsState {

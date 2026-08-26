@@ -178,7 +178,9 @@ class GroupsRemoteDataSource {
             type: ApiErrorType.server,
           );
         }
-        return const GroupsException('حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.');
+        return const GroupsException(
+          'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.',
+        );
     }
   }
 }

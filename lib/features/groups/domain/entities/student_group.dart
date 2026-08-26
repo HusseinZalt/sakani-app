@@ -24,14 +24,11 @@ enum HousingGroupStatus {
 
 /// غروب سكن جامعي: مجموعة طلاب يرغبون بمشاركة نفس الوحدة السكنية.
 ///
-/// ملاحظة: `memberStudentIds` معرّفات فقط بلا أسماء (الباك إند لسا ما
-/// بيرجع أسماء الأعضاء الفعليين). طلبات الانضمام المعلّقة
-/// (`pendingInvitations`) بالمقابل صار معها اسم حقيقي
-/// (`GroupInvitation.studentName`) بعد إصلاح من الباك إند — مؤكَّد
-/// بالاختبار الفعلي (2026-08-24). التطبيق يستغل هذا: يخزّن محلياً كل اسم
-/// يمرّ أمام القائد ضمن طلب انضمام (`GroupMemberNamesCache`)، ويستخدمه
-/// لعرض اسم حقيقي بقائمة الأعضاء بدل "عضو N" — يعمل فقط على جهاز القائد،
-/// ولأعضاء انضمّوا بعد أول مرة يُفعَّل فيها هذا التخزين.
+/// [memberNames] مؤكَّد بالاختبار الفعلي (2026-08-26): `GET
+/// /api/housing-groups/mine` صار يرجع حقل `members` (`{studentId, name}`)
+/// بأسماء حقيقية لكل عضو — يصل لأي طالب بالغروب (قائد أو عضو عادي)
+/// عند استدعائه لغروبه هو نفسه، بعد ما كانت `memberStudentIds` معرّفات
+/// مجردة بلا أي طريقة لتحويلها لأسماء.
 class StudentGroup extends Equatable {
   const StudentGroup({
     required this.id,
@@ -42,6 +39,7 @@ class StudentGroup extends Equatable {
     required this.status,
     this.description,
     this.pendingInvitations = const [],
+    this.memberNames = const {},
   });
 
   final int id;
@@ -56,6 +54,10 @@ class StudentGroup extends Equatable {
 
   /// تظهر فقط للقائد (تُرجعها الخدمة فارغة لغير القائد).
   final List<GroupInvitation> pendingInvitations;
+
+  /// اسم كل عضو بالغروب (معرّف الطالب ← اسمه)، من حقل `members` — راجع
+  /// التوثيق أعلاه.
+  final Map<String, String> memberNames;
 
   int get memberCount => memberStudentIds.length;
 
@@ -74,5 +76,6 @@ class StudentGroup extends Equatable {
     status,
     description,
     pendingInvitations,
+    memberNames,
   ];
 }

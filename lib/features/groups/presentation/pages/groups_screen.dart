@@ -162,53 +162,51 @@ class _GroupsViewState extends State<_GroupsView> {
                       message: failure.message,
                       onRetry: cubit.fetchMyGroup,
                     ),
-                    GroupsSuccess(:final myGroup, :final memberNames) =>
-                      RefreshIndicator(
-                        onRefresh: cubit.fetchMyGroup,
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                          children: [
-                            if (myGroup != null) ...[
-                              _MyGroupCard(
-                                group: myGroup,
-                                myId: myId,
-                                memberNames: memberNames,
-                                onLeave: () => _handleLeaveGroup(cubit),
-                              ),
-                              if (myGroup.isLeader(myId)) ...[
-                                const SizedBox(height: 24),
-                                _PendingInvitationsSection(
-                                  invitations:
-                                      myGroup.pendingInvitations
-                                          .where(
-                                            (i) =>
-                                                i.status ==
-                                                InvitationStatus.pending,
-                                          )
-                                          .toList(),
-                                  onRespond:
-                                      (invitation, approve) => _handleRespond(
-                                        cubit,
-                                        invitation,
-                                        approve,
-                                      ),
-                                ),
-                              ],
-                            ] else ...[
-                              _NoGroupCard(
-                                isLoading: _isSubmitting,
-                                onCreate: () => _handleCreateGroup(cubit),
-                              ),
-                              const SizedBox(height: 16),
-                              _JoinByCodeCard(
-                                controller: _joinCodeController,
-                                isLoading: _isSubmitting,
-                                onJoin: () => _handleJoinByCode(cubit),
+                    GroupsSuccess(:final myGroup) => RefreshIndicator(
+                      onRefresh: cubit.fetchMyGroup,
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                        children: [
+                          if (myGroup != null) ...[
+                            _MyGroupCard(
+                              group: myGroup,
+                              myId: myId,
+                              onLeave: () => _handleLeaveGroup(cubit),
+                            ),
+                            if (myGroup.isLeader(myId)) ...[
+                              const SizedBox(height: 24),
+                              _PendingInvitationsSection(
+                                invitations:
+                                    myGroup.pendingInvitations
+                                        .where(
+                                          (i) =>
+                                              i.status ==
+                                              InvitationStatus.pending,
+                                        )
+                                        .toList(),
+                                onRespond:
+                                    (invitation, approve) => _handleRespond(
+                                      cubit,
+                                      invitation,
+                                      approve,
+                                    ),
                               ),
                             ],
+                          ] else ...[
+                            _NoGroupCard(
+                              isLoading: _isSubmitting,
+                              onCreate: () => _handleCreateGroup(cubit),
+                            ),
+                            const SizedBox(height: 16),
+                            _JoinByCodeCard(
+                              controller: _joinCodeController,
+                              isLoading: _isSubmitting,
+                              onJoin: () => _handleJoinByCode(cubit),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
+                    ),
                   };
                 },
               ),
@@ -224,13 +222,11 @@ class _MyGroupCard extends StatelessWidget {
   const _MyGroupCard({
     required this.group,
     required this.myId,
-    required this.memberNames,
     required this.onLeave,
   });
 
   final StudentGroup group;
   final String? myId;
-  final Map<String, String> memberNames;
   final VoidCallback onLeave;
 
   @override
@@ -339,7 +335,7 @@ class _MyGroupCard extends StatelessWidget {
               index: i,
               isMe: group.memberStudentIds[i] == myId,
               isLeader: group.memberStudentIds[i] == group.leaderId,
-              name: memberNames[group.memberStudentIds[i]],
+              name: group.memberNames[group.memberStudentIds[i]],
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -400,12 +396,9 @@ class _GroupCodeActionButton extends StatelessWidget {
   }
 }
 
-/// صف عضو واحد — الخدمة لا تُرجع أسماء لقائمة الأعضاء الفعليين إطلاقاً
-/// (معرّفات فقط)، لكن اسم أي عضو انضمّ عبر كود يكون قد وصل مسبقاً لجهاز
-/// القائد ضمن طلب انضمامه (راجع [GroupMemberNamesCache])، فنعرضه إن كان
-/// معروفاً، وإلا نرجع لـ "عضو N" كحل احتياطي (يحصل هذا لعضو انضمّ قبل
-/// تفعيل هذا التخزين لأول مرة، أو لعرض الشاشة من جهاز عضو عادي غير القائد
-/// لأن طلبات الانضمام لا تصل إلا للقائد أصلاً).
+/// صف عضو واحد — يعرض اسمه الحقيقي من [StudentGroup.memberNames] إن كان
+/// معروفاً، وإلا يرجع لـ "عضو N" كحل احتياطي (نظرياً لا يحصل هذا بعد
+/// التأكد من أن الخدمة صارت ترجع اسماً لكل عضو حالي).
 class _MemberRow extends StatelessWidget {
   const _MemberRow({
     required this.index,
