@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/notifications/notifications_badge_cubit.dart';
+import '../../../../core/session/user_session_cubit.dart';
+import '../../../../core/widgets/profile_avatar.dart';
 
 /// الحاوية الرئيسية (Shell) التي تضم شريط التنقل السفلي وتستضيف التبويبات
 /// الخمسة المعتمدة (الملف، الإشعارات، الغروبات، طلب السكن، الرئيسية) عبر
@@ -36,10 +38,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   List<NavigationDestination> _destinations(int unreadCount) {
+    final avatarUrl = context.watch<UserSessionCubit>().state?.avatarUrl;
+
     return [
-      const NavigationDestination(
-        icon: Icon(Icons.person_outline_rounded),
-        selectedIcon: Icon(Icons.person_rounded),
+      NavigationDestination(
+        icon: _ProfileTabIcon(avatarUrl: avatarUrl, isSelected: false),
+        selectedIcon: _ProfileTabIcon(avatarUrl: avatarUrl, isSelected: true),
         label: 'الملف',
       ),
       NavigationDestination(
@@ -114,6 +118,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
       ),
     );
+  }
+}
+
+/// أيقونة تبويب "الملف" — تعرض صورة البروفايل الفعلية إن وُجدت بدل أيقونة
+/// شخص عامة، مطابقةً لنفس التغيير بهيدر الرئيسية.
+class _ProfileTabIcon extends StatelessWidget {
+  const _ProfileTabIcon({required this.avatarUrl, required this.isSelected});
+
+  final String? avatarUrl;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (avatarUrl == null) {
+      return Icon(
+        isSelected ? Icons.person_rounded : Icons.person_outline_rounded,
+      );
+    }
+    return ProfileAvatar(avatarUrl: avatarUrl, radius: 12);
   }
 }
 

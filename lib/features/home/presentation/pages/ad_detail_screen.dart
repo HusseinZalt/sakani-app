@@ -214,10 +214,15 @@ class _ImagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: isWarning ? AppColors.warningGradient : AppColors.accentGradient,
+        gradient:
+            isWarning ? AppColors.warningGradient : AppColors.accentGradient,
       ),
       alignment: Alignment.center,
-      child: const Icon(Icons.campaign_outlined, size: 48, color: AppColors.white),
+      child: const Icon(
+        Icons.campaign_outlined,
+        size: 48,
+        color: AppColors.white,
+      ),
     );
   }
 }

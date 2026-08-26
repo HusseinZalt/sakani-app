@@ -64,8 +64,7 @@ class _AllAdsView extends StatelessWidget {
               child: BlocBuilder<AllAdsCubit, AllAdsState>(
                 builder: (context, state) {
                   return switch (state) {
-                    AllAdsInitial() ||
-                    AllAdsLoading() => const Center(
+                    AllAdsInitial() || AllAdsLoading() => const Center(
                       child: CircularProgressIndicator(),
                     ),
                     AllAdsFailure(:final failure) => _ErrorView(
@@ -253,17 +252,13 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.campaign_outlined,
-              size: 48,
-              color: AppColors.textHint,
-            ),
+            Icon(Icons.campaign_outlined, size: 48, color: AppColors.textHint),
             const SizedBox(height: 12),
             Text(
               'لا توجد إعلانات حالياً',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),

@@ -10,6 +10,7 @@ import '../../../../core/constants/app_radius.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/widgets/custom_card.dart';
+import '../../../../core/widgets/profile_avatar.dart';
 import '../../../../core/widgets/refresh_on_tab_visible.dart';
 import '../../data/repositories/home_repository_impl.dart';
 import '../../domain/entities/home_dashboard.dart';
@@ -168,34 +169,55 @@ class _HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final studentName = context.watch<UserSessionCubit>().state?.fullName;
+    final user = context.watch<UserSessionCubit>().state;
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'مرحباً بك',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.white.withValues(alpha: 0.85),
-                  fontWeight: FontWeight.w500,
+    return ClipRRect(
+      borderRadius: BorderRadius.only(
+        bottomLeft: Radius.circular(AppRadius.xxl),
+        bottomRight: Radius.circular(AppRadius.xxl),
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+            child: Row(
+              children: [
+                ProfileAvatar(
+                  avatarUrl: user?.avatarUrl,
+                  radius: 26,
+                  backgroundColor: AppColors.white.withValues(alpha: 0.18),
+                  iconColor: AppColors.white,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                studentName ?? '...',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w800,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'مرحباً بك',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.white.withValues(alpha: 0.85),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.fullName ?? '...',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
