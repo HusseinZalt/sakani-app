@@ -21,5 +21,32 @@ void main() {
       expect(model.relatedId, equals('grp-1'));
       expect(model.isUnread, isTrue);
     });
+
+    test('falls back to now instead of throwing when createdAt is null', () {
+      final json = {
+        'notificationId': 56,
+        'title': 'إشعار قديم',
+        'isRead': true,
+        'createdAt': null,
+      };
+
+      expect(() => AppNotificationModel.fromJson(json), returnsNormally);
+      final model = AppNotificationModel.fromJson(json);
+      expect(model.createdAt, isA<DateTime>());
+    });
+
+    test(
+      'falls back to now instead of throwing when createdAt is malformed',
+      () {
+        final json = {
+          'notificationId': 57,
+          'title': 'إشعار بتاريخ غير صالح',
+          'isRead': true,
+          'createdAt': 'not-a-date',
+        };
+
+        expect(() => AppNotificationModel.fromJson(json), returnsNormally);
+      },
+    );
   });
 }

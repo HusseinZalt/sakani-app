@@ -37,10 +37,16 @@ class NotificationsRemoteDataSource {
       );
       final body = _asJsonMap(response.data);
       final items = (body['items'] as List?) ?? const [];
-      return items
-          .whereType<Map<String, dynamic>>()
-          .map(AppNotificationModel.fromJson)
-          .toList();
+      final notifications = <AppNotificationModel>[];
+      for (final item in items.whereType<Map<String, dynamic>>()) {
+        try {
+          notifications.add(AppNotificationModel.fromJson(item));
+        } catch (_) {
+          // إشعار واحد بحقل غير متوقع لا يجوز أن يُسقط طلب الإشعارات
+          // بالكامل (كل الإشعارات) — نتجاهله ونكمل بالباقي.
+        }
+      }
+      return notifications;
     } on DioException catch (e) {
       throw _mapDioException(e);
     }

@@ -53,7 +53,7 @@ class AppNotificationModel extends AppNotification {
     final adId = data?['adId'] as String?;
     final type = (data?['type'] as String?) ?? (adId != null ? 'ad' : null);
     final relatedId = (data?['relatedId'] as String?) ?? adId;
-    final createdAt = parseUtcDateTime(json['createdAt'] as String);
+    final createdAt = _parseCreatedAt(json['createdAt']);
     final title = json['title'] as String? ?? '';
 
     return AppNotificationModel(
@@ -67,6 +67,25 @@ class AppNotificationModel extends AppNotification {
       type: type,
       relatedId: relatedId,
     );
+  }
+
+  /// كان `json['createdAt'] as String` مباشرة يُسقط الإشعار كامل الطلب
+  /// (كل الإشعارات، وليس هذا الإشعار وحده) بخطأ نوع غير مُعالَج لو وصل
+  /// هذا الحقل فارغاً (`null`) أو بتنسيق غير صالح لإشعار واحد فقط ضمن
+  /// القائمة — `fetchNotifications` تحوّل كل عنصر بنفس `map()` الواحدة،
+  /// فيسقط الجميع تبعاً لأول عنصر معطوب، ويظهر ذلك للمستخدم كـ"خطأ غير
+  /// متوقع" عام على كامل صفحة الإشعارات (رُصِد فعلياً على حساب لم يُظهر
+  /// حسابٌ آخر نفس العطل، ما يرجّح بيانات إشعار واحد قديم/شاذ تحديداً في
+  /// حسابه). نتجاهل الحقل المعطوب بدل إسقاط الإشعار بالكامل.
+  static DateTime _parseCreatedAt(dynamic raw) {
+    if (raw is String) {
+      try {
+        return parseUtcDateTime(raw);
+      } catch (_) {
+        // تنسيق تاريخ غير صالح — نتابع للقيمة الاحتياطية أدناه.
+      }
+    }
+    return DateTime.now().toUtc();
   }
 
   /// خدمة السكن ترسل كل إشعاراتها بنفس `type: "housing"` بغض النظر عن
