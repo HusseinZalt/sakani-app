@@ -46,7 +46,8 @@ class _GroupsView extends StatefulWidget {
 
 class _GroupsViewState extends State<_GroupsView> {
   final _joinCodeController = TextEditingController();
-  bool _isSubmitting = false;
+  bool _isCreatingGroup = false;
+  bool _isJoiningGroup = false;
 
   @override
   void dispose() {
@@ -61,11 +62,11 @@ class _GroupsViewState extends State<_GroupsView> {
   }
 
   Future<void> _handleCreateGroup(GroupsCubit cubit) async {
-    if (_isSubmitting) return;
-    setState(() => _isSubmitting = true);
+    if (_isCreatingGroup || _isJoiningGroup) return;
+    setState(() => _isCreatingGroup = true);
     final result = await cubit.createGroup();
     if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    setState(() => _isCreatingGroup = false);
     if (result.isSuccess) HapticFeedback.lightImpact();
     _showMessage(
       result.isSuccess
@@ -75,7 +76,7 @@ class _GroupsViewState extends State<_GroupsView> {
   }
 
   Future<void> _handleJoinByCode(GroupsCubit cubit) async {
-    if (_isSubmitting) return;
+    if (_isCreatingGroup || _isJoiningGroup) return;
     final code = _joinCodeController.text.trim();
     if (code.isEmpty) return;
 
@@ -87,10 +88,10 @@ class _GroupsViewState extends State<_GroupsView> {
     );
     if (!confirmed || !mounted) return;
 
-    setState(() => _isSubmitting = true);
+    setState(() => _isJoiningGroup = true);
     final result = await cubit.joinGroupByCode(code);
     if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    setState(() => _isJoiningGroup = false);
     if (result.isSuccess) {
       HapticFeedback.lightImpact();
       _joinCodeController.clear();
@@ -199,13 +200,13 @@ class _GroupsViewState extends State<_GroupsView> {
                             ],
                           ] else ...[
                             _NoGroupCard(
-                              isLoading: _isSubmitting,
+                              isLoading: _isCreatingGroup,
                               onCreate: () => _handleCreateGroup(cubit),
                             ),
                             const SizedBox(height: 16),
                             _JoinByCodeCard(
                               controller: _joinCodeController,
-                              isLoading: _isSubmitting,
+                              isLoading: _isJoiningGroup,
                               onJoin: () => _handleJoinByCode(cubit),
                             ),
                           ],
