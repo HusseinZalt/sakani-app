@@ -24,4 +24,8 @@ abstract class GroupsRepository {
   /// مغادرة الغروب الحالي — إن كان المستخدم القائد وبقي أعضاء آخرون، تُنقل
   /// القيادة تلقائياً لأقدم عضو من جهة الباك إند، دون أي إجراء إضافي هنا.
   Future<ApiResult<void>> leaveGroup();
+
+  /// يشيل عضواً من الغروب — للقائد فقط، ولا يمكنه شيل نفسه (يستخدم
+  /// [leaveGroup] بدلاً من ذلك).
+  Future<ApiResult<void>> removeMember(String studentId);
 }

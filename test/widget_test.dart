@@ -75,6 +75,11 @@ class _FakeGroupsRepository implements GroupsRepository {
   Future<ApiResult<void>> leaveGroup() async {
     return ApiResult.success(null);
   }
+
+  @override
+  Future<ApiResult<void>> removeMember(String studentId) async {
+    return ApiResult.success(null);
+  }
 }
 
 class _FakeNotificationsRepository implements NotificationsRepository {

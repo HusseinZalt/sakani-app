@@ -77,6 +77,27 @@ class GroupsRemoteDataSource {
     }
   }
 
+  /// يشيل عضواً من غروب المستخدم الحالي — للقائد فقط (يُحلّ الغروب من
+  /// الـ token، بدون تمرير معرّف الغروب بالمسار). مؤكَّد بتوثيق الباك
+  /// إند (2026-08-27، commit 10374d5): لو الغروب متخصَّص غرفة، حالة
+  /// التخصيص تتزامن تلقائياً، وتُنقل القيادة عند الحاجة.
+  Future<void> removeMember(String studentId) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/housing-groups/mine/members/$studentId/remove',
+        data: {},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw const GroupsException(
+          'لست قائد هذا الغروب، أو أن هذا العضو لم يعد موجوداً.',
+          type: ApiErrorType.notFound,
+        );
+      }
+      throw _mapDioException(e);
+    }
+  }
+
   Map<String, dynamic> _asJsonMap(dynamic data) {
     if (data is Map<String, dynamic>) return data;
     if (data is String && data.isNotEmpty) {

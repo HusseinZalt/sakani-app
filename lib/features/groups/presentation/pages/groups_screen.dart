@@ -122,6 +122,27 @@ class _GroupsViewState extends State<_GroupsView> {
     );
   }
 
+  Future<void> _handleRemoveMember(
+    GroupsCubit cubit,
+    String studentId,
+    String memberLabel,
+  ) async {
+    final confirmed = await confirmAction(
+      context,
+      title: 'إزالة عضو',
+      message: 'هل أنت متأكد أنك تريد إزالة "$memberLabel" من الغروب؟',
+      confirmLabel: 'إزالة',
+    );
+    if (!confirmed || !mounted) return;
+
+    final result = await cubit.removeMember(studentId);
+    if (!mounted) return;
+    if (result.isSuccess) HapticFeedback.lightImpact();
+    _showMessage(
+      result.isSuccess ? 'تم إزالة العضو من الغروب.' : result.failureOrNull!.message,
+    );
+  }
+
   Future<void> _handleLeaveGroup(GroupsCubit cubit) async {
     final confirmed = await confirmAction(
       context,
@@ -180,6 +201,13 @@ class _GroupsViewState extends State<_GroupsView> {
                                 group: myGroup,
                                 myId: myId,
                                 onLeave: () => _handleLeaveGroup(cubit),
+                                onRemoveMember:
+                                    (studentId, memberLabel) =>
+                                        _handleRemoveMember(
+                                          cubit,
+                                          studentId,
+                                          memberLabel,
+                                        ),
                               ),
                               if (myGroup.isLeader(myId)) ...[
                                 const SizedBox(height: 24),
@@ -237,11 +265,13 @@ class _MyGroupCard extends StatelessWidget {
     required this.group,
     required this.myId,
     required this.onLeave,
+    required this.onRemoveMember,
   });
 
   final StudentGroup group;
   final String? myId;
   final VoidCallback onLeave;
+  final void Function(String studentId, String memberLabel) onRemoveMember;
 
   @override
   Widget build(BuildContext context) {
@@ -350,6 +380,14 @@ class _MyGroupCard extends StatelessWidget {
               isMe: group.memberStudentIds[i] == myId,
               isLeader: group.memberStudentIds[i] == group.leaderId,
               name: group.memberNames[group.memberStudentIds[i]],
+              onRemove:
+                  group.isLeader(myId) && group.memberStudentIds[i] != myId
+                      ? () => onRemoveMember(
+                        group.memberStudentIds[i],
+                        group.memberNames[group.memberStudentIds[i]] ??
+                            'عضو ${i + 1}',
+                      )
+                      : null,
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -419,12 +457,17 @@ class _MemberRow extends StatelessWidget {
     required this.isMe,
     required this.isLeader,
     this.name,
+    this.onRemove,
   });
 
   final int index;
   final bool isMe;
   final bool isLeader;
   final String? name;
+
+  /// null يعني عدم إظهار زر الإزالة أصلاً — يُمرَّر فقط لصفوف الأعضاء
+  /// الآخرين حين يكون المستخدم الحالي قائد الغروب (راجع _MyGroupCard).
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -445,37 +488,46 @@ class _MemberRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              if (isLeader) ...[
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.emoji_events_outlined,
-                      size: 12,
-                      color: AppColors.secondaryDark,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'قائد الغروب',
-                      style: theme.textTheme.labelSmall?.copyWith(
+                if (isLeader) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.emoji_events_outlined,
+                        size: 12,
                         color: AppColors.secondaryDark,
-                        fontWeight: FontWeight.w700,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'قائد الغروب',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.secondaryDark,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
+          if (onRemove != null)
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.person_remove_outlined),
+              color: AppColors.error,
+              tooltip: 'إزالة من الغروب',
+            ),
         ],
       ),
     );

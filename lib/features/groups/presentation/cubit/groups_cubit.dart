@@ -81,4 +81,10 @@ class GroupsCubit extends Cubit<GroupsState> {
     if (result.isSuccess) await fetchMyGroup();
     return result;
   }
+
+  Future<ApiResult<void>> removeMember(String studentId) async {
+    final result = await _repository.removeMember(studentId);
+    if (result.isSuccess) await fetchMyGroup();
+    return result;
+  }
 }

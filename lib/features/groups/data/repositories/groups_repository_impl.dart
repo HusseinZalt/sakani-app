@@ -78,4 +78,16 @@ class GroupsRepositoryImpl implements GroupsRepository {
       return ApiResult.failure(ApiFailure.unknown());
     }
   }
+
+  @override
+  Future<ApiResult<void>> removeMember(String studentId) async {
+    try {
+      await _remoteDataSource.removeMember(studentId);
+      return ApiResult.success(null);
+    } on GroupsException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
 }
