@@ -9,15 +9,12 @@ import '../../../../core/widgets/gradient_header.dart';
 
 /// شاشة الدعم الفني — معلومات تواصل ثابتة (بلا نموذج إرسال، لعدم وجود
 /// نقطة نهاية بالباك إند لاستقبال طلبات الدعم حالياً).
-///
-/// ⚠️ القيم أدناه بيانات مؤقتة (placeholder) لحد ما تُستبدل ببيانات
-/// التواصل الحقيقية لفريق الدعم.
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
 
-  static const _phoneNumber = '+963000000000';
-  static const _whatsappNumber = '+963000000000';
-  static const _email = 'support@example.com';
+  static const _phoneNumber = '+963967146105';
+  static const _whatsappNumber = '+963967146105';
+  static const _email = 'SakaniSakani@gmail.com';
   static const _workingHours = 'الأحد – الخميس، 9 صباحاً – 4 عصراً';
 
   Future<void> _launch(BuildContext context, Uri uri) async {
