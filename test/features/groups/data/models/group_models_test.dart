@@ -55,10 +55,7 @@ void main() {
 
       final model = StudentGroupModel.fromJson(json);
 
-      expect(model.memberNames, {
-        'std-1': 'خالد يوسف',
-        'std-2': 'أحمد علي',
-      });
+      expect(model.memberNames, {'std-1': 'خالد يوسف', 'std-2': 'أحمد علي'});
     });
 
     test('handles a missing members field as an empty map', () {

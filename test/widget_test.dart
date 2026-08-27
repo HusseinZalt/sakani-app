@@ -279,11 +279,11 @@ void main() {
     await cubit.joinGroupByCode('ABC123');
     var state = cubit.state as GroupsSuccess;
     expect(state.myGroup, isNull);
-    expect(state.pendingJoinCode, 'ABC123');
+    expect(state.pendingJoinRequest?.code, 'ABC123');
 
     await cubit.cancelPendingJoinRequest();
     state = cubit.state as GroupsSuccess;
-    expect(state.pendingJoinCode, isNull);
+    expect(state.pendingJoinRequest, isNull);
   });
 
   test('الانضمام الفعلي لغروب يمسح حالة الانتظار المحلية تلقائياً', () async {
@@ -303,7 +303,7 @@ void main() {
 
     final state = cubit.state as GroupsSuccess;
     expect(state.myGroup, isNotNull);
-    expect(state.pendingJoinCode, isNull);
+    expect(state.pendingJoinRequest, isNull);
   });
 
   test('إذا فشل تعليم الإشعار كمقروء، تعود الحالة إلى ما كانت عليه', () async {

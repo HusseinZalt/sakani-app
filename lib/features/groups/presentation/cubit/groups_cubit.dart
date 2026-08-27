@@ -29,8 +29,8 @@ class GroupsCubit extends Cubit<GroupsState> {
           emit(GroupsSuccess(data));
           return;
         }
-        final pendingCode = await PendingJoinRequestStorage.load();
-        emit(GroupsSuccess(data, pendingJoinCode: pendingCode));
+        final pendingRequest = await PendingJoinRequestStorage.load();
+        emit(GroupsSuccess(data, pendingJoinRequest: pendingRequest));
       case ApiFailureResult<StudentGroup?>(:final failure):
         emit(GroupsFailure(failure));
     }
@@ -60,7 +60,7 @@ class GroupsCubit extends Cubit<GroupsState> {
     await PendingJoinRequestStorage.clear();
     final current = state;
     if (current is GroupsSuccess) {
-      emit(GroupsSuccess(current.myGroup, pendingJoinCode: null));
+      emit(GroupsSuccess(current.myGroup, pendingJoinRequest: null));
     }
   }
 

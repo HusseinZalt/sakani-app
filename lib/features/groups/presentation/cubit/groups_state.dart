@@ -1,4 +1,5 @@
 import '../../../../core/network/api_result.dart';
+import '../../data/pending_join_request_storage.dart';
 import '../../domain/entities/student_group.dart';
 
 sealed class GroupsState {
@@ -14,14 +15,15 @@ final class GroupsLoading extends GroupsState {
 }
 
 final class GroupsSuccess extends GroupsState {
-  const GroupsSuccess(this.myGroup, {this.pendingJoinCode});
+  const GroupsSuccess(this.myGroup, {this.pendingJoinRequest});
 
   final StudentGroup? myGroup;
 
-  /// كود آخر طلب انضمام أرسله الطالب وما زال بانتظار رد قائد الغروب —
-  /// null إن لم يرسل طلباً، أو إن كان أصلاً ضمن غروب. راجع التوثيق
-  /// المفصَّل بـ [PendingJoinRequestStorage] لحدود هذا التتبّع.
-  final String? pendingJoinCode;
+  /// آخر طلب انضمام أرسله الطالب وما زال (على حد علم التطبيق) بانتظار
+  /// رد قائد الغروب — null إن لم يرسل طلباً، أو إن كان أصلاً ضمن غروب.
+  /// راجع التوثيق المفصَّل بـ [PendingJoinRequestStorage] لحدود هذا
+  /// التتبّع (لا يعرف التطبيق فعلياً إن رُفض الطلب بصمت).
+  final PendingJoinRequest? pendingJoinRequest;
 }
 
 final class GroupsFailure extends GroupsState {

@@ -12,6 +12,7 @@ import '../../../../core/widgets/custom_card.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../../core/widgets/refresh_on_tab_visible.dart';
+import '../../data/pending_join_request_storage.dart';
 import '../../data/repositories/groups_repository_impl.dart';
 import '../../domain/entities/group_invitation.dart';
 import '../../domain/entities/student_group.dart';
@@ -168,7 +169,7 @@ class _GroupsViewState extends State<_GroupsView> {
                       message: failure.message,
                       onRetry: cubit.fetchMyGroup,
                     ),
-                    GroupsSuccess(:final myGroup, :final pendingJoinCode) =>
+                    GroupsSuccess(:final myGroup, :final pendingJoinRequest) =>
                       RefreshIndicator(
                         onRefresh: cubit.fetchMyGroup,
                         child: ListView(
@@ -199,9 +200,9 @@ class _GroupsViewState extends State<_GroupsView> {
                                       ),
                                 ),
                               ],
-                            ] else if (pendingJoinCode != null) ...[
+                            ] else if (pendingJoinRequest != null) ...[
                               _PendingJoinRequestCard(
-                                code: pendingJoinCode,
+                                request: pendingJoinRequest,
                                 onCancel:
                                     () => cubit.cancelPendingJoinRequest(),
                               ),
@@ -644,51 +645,88 @@ class _RoundIconButton extends StatelessWidget {
 /// تُعرض بدل بطاقتَي الإنشاء/الانضمام بمجرّد إرسال طلب انضمام بكود، حتى
 /// يستجيب قائد الغروب — الطالب لا يقدر يرسل طلباً تانياً ولا ينشئ غروباً
 /// جديداً وهو بانتظار رد على طلب قائم أصلاً.
-class _PendingJoinRequestCard extends StatelessWidget {
-  const _PendingJoinRequestCard({required this.code, required this.onCancel});
+/// خدمة السكن لا توفّر أي طريقة يعرف فيها التطبيق أن قائد الغروب رفض
+/// الطلب (بعكس الموافقة، التي تنعكس تلقائياً بمجرد ظهور الطالب ضمن
+/// أعضاء الغروب) — الرفض الصامت والتجاهل يبدوان متطابقين تماماً من هون.
+/// بعد مرور هذه المدة بلا أي رد، تتحول الواجهة من افتراض "لسا ما جاوب"
+/// إلى تنبيه صريح إنه ممكن يكون انرفض فعلاً، وتُبرز زر الإلغاء بدل ما
+/// تبقي الطالب بانتظار قد يطول للأبد بلا أي مؤشر.
+const _pendingJoinStaleAfter = Duration(hours: 48);
 
-  final String code;
+class _PendingJoinRequestCard extends StatelessWidget {
+  const _PendingJoinRequestCard({
+    required this.request,
+    required this.onCancel,
+  });
+
+  final PendingJoinRequest request;
   final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isStale = request.elapsed > _pendingJoinStaleAfter;
+
     return CustomCard(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          const SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(strokeWidth: 2.4),
-          ),
+          if (isStale)
+            const Icon(
+              Icons.hourglass_disabled_rounded,
+              size: 32,
+              color: AppColors.warning,
+            )
+          else
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
           const SizedBox(height: 14),
-          Text('بانتظار رد قائد الغروب', style: theme.textTheme.titleSmall),
+          Text(
+            isStale ? 'طال انتظار الرد' : 'بانتظار رد قائد الغروب',
+            style: theme.textTheme.titleSmall,
+          ),
           const SizedBox(height: 4),
           Text(
-            'أرسلت طلب انضمام بالكود "$code". بمجرد ما يوافق أو يرفض قائد الغروب، رح تنعكس هون تلقائياً.',
+            isStale
+                ? 'أرسلت طلب انضمام بالكود "${request.code}" من مدة وما وصل رد لحد هلق — يمكن يكون القائد رفضه بصمت (ما في طريقة نتأكد منها). إذا حابب، بإمكانك إلغاء الانتظار والمحاولة من جديد.'
+                : 'أرسلت طلب انضمام بالكود "${request.code}". بمجرد ما يوافق قائد الغروب، رح تنعكس هون تلقائياً.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
-          TextButton(
-            onPressed: () async {
-              final confirmed = await confirmAction(
-                context,
-                title: 'إلغاء الانتظار',
-                message:
-                    'رح تقدر ترسل طلب انضمام تاني أو تنشئ غروباً جديداً. طلبك الحالي بيضل موجود عند قائد الغروب لحد ما يستجيب له.',
-                confirmLabel: 'إلغاء الانتظار',
-              );
-              if (confirmed) onCancel();
-            },
-            child: const Text('لسا ما وصلك رد؟ ألغِ الانتظار'),
-          ),
+          if (isStale)
+            OutlinedButton(
+              onPressed: () => _confirmCancel(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.warning,
+                side: const BorderSide(color: AppColors.warning),
+              ),
+              child: const Text('إلغاء الانتظار والمحاولة من جديد'),
+            )
+          else
+            TextButton(
+              onPressed: () => _confirmCancel(context),
+              child: const Text('لسا ما وصلك رد؟ ألغِ الانتظار'),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmCancel(BuildContext context) async {
+    final confirmed = await confirmAction(
+      context,
+      title: 'إلغاء الانتظار',
+      message:
+          'رح تقدر ترسل طلب انضمام تاني أو تنشئ غروباً جديداً. طلبك الحالي بيضل موجود عند قائد الغروب لحد ما يستجيب له.',
+      confirmLabel: 'إلغاء الانتظار',
+    );
+    if (confirmed) onCancel();
   }
 }
 
