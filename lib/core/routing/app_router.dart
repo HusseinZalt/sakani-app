@@ -25,6 +25,7 @@ import '../../features/profile/presentation/pages/profile_screen.dart';
 import '../../features/settings/presentation/pages/change_password_screen.dart';
 import '../../features/settings/presentation/pages/privacy_policy_screen.dart';
 import '../../features/settings/presentation/pages/settings_screen.dart';
+import '../../features/settings/presentation/pages/support_screen.dart';
 import '../../features/splash/presentation/pages/splash_screen.dart';
 
 /// أسماء ومسارات جميع شاشات التطبيق في مكان واحد، لتفادي كتابة السلاسل
@@ -58,6 +59,7 @@ class AppRoutes {
   static const changePassword = 'changePassword';
   static const privacyPolicy = 'privacyPolicy';
   static const documents = 'documents';
+  static const support = 'support';
 
   static const splashPath = '/splash';
   static const loginPath = '/login';
@@ -83,6 +85,7 @@ class AppRoutes {
   static const changePasswordPath = '/change-password';
   static const privacyPolicyPath = '/privacy-policy';
   static const documentsPath = '/documents';
+  static const supportPath = '/support';
 }
 
 /// إعداد التنقل الموحّد للتطبيق باستخدام GoRouter.
@@ -170,6 +173,12 @@ class AppRouter {
         name: AppRoutes.privacyPolicy,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.supportPath,
+        name: AppRoutes.support,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SupportScreen(),
       ),
       GoRoute(
         path: AppRoutes.documentsPath,

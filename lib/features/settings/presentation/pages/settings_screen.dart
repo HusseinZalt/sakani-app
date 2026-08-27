@@ -91,9 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: _complaintsNotifications,
                           onChanged: (value) {
                             setState(() => _complaintsNotifications = value);
-                            NotificationPreferences.setComplaintsEnabled(
-                              value,
-                            );
+                            NotificationPreferences.setComplaintsEnabled(value);
                           },
                           title: const Text('إشعارات الشكاوى والاقتراحات'),
                           subtitle: const Text('ردود الإدارة'),
@@ -139,6 +137,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: 'سياسة الخصوصية',
                           onTap:
                               () => context.pushNamed(AppRoutes.privacyPolicy),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    'المساعدة',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  CustomCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        _SettingsMenuTile(
+                          icon: Icons.support_agent_outlined,
+                          title: 'الدعم الفني',
+                          onTap: () => context.pushNamed(AppRoutes.support),
                         ),
                       ],
                     ),
