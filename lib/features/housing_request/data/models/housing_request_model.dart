@@ -13,13 +13,16 @@ class AllocationModel extends Allocation {
     required super.roomNumber,
     required super.buildingName,
     required super.allocatedAt,
+    super.vacatedAt,
   });
 
   factory AllocationModel.fromJson(Map<String, dynamic> json) {
+    final vacatedAt = json['vacatedAt'] as String?;
     return AllocationModel(
       roomNumber: json['roomNumber'] as String? ?? '',
       buildingName: json['buildingName'] as String? ?? '',
       allocatedAt: parseUtcDateTime(json['allocatedAt'] as String),
+      vacatedAt: vacatedAt == null ? null : parseUtcDateTime(vacatedAt),
     );
   }
 }

@@ -47,7 +47,13 @@ class HousingRequestRemoteDataSource {
   Future<AllocationModel?> fetchMyAllocation() async {
     try {
       final response = await _dio.get<dynamic>('/api/allocations/mine');
-      return AllocationModel.fromJson(_asJsonMap(response.data));
+      final allocation = AllocationModel.fromJson(_asJsonMap(response.data));
+      // احتياطي: لو رجعت الخدمة تخصيصاً قديماً أُخلي عنه فعلاً
+      // (`vacatedAt` معبّأ) بدل حذفه من `/mine`، نتعامل معه كأنه لا
+      // يوجد تخصيص نشط أصلاً — وإلا يبقى الطالب يظهر "مسكون" للأبد
+      // حتى بعد إخلاء غرفته فعلياً.
+      if (allocation.vacatedAt != null) return null;
+      return allocation;
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null;
       throw _mapDioException(e);
@@ -184,7 +190,21 @@ class HousingRequestRemoteDataSource {
         '/api/housing-requests/mine/$requestId',
         data: formData,
       );
-      return HousingRequestModel.fromJson(_asJsonMap(response.data));
+      final body = _tryAsJsonMap(response.data);
+      if (body != null) return HousingRequestModel.fromJson(body);
+
+      // احتياطي: توثيق Swagger لهذا الـ endpoint تحديداً لا يُظهر أي
+      // جسم استجابة (200 بلا محتوى) خلافاً لعملية التقديم المكافئة
+      // (POST) التي ترجع الطلب كاملاً — قد يكون هذا سلوكاً فعلياً
+      // للخادم، أو مجرد نقص بتوثيق Swagger. إن لم يصلنا جسم استجابة
+      // صالح، نجلب الطلب المُحدَّث بنداء منفصل بدل اعتبار التعديل
+      // فاشلاً رغم نجاحه فعلياً (الحالة 200 وصلت أصلاً).
+      final refreshed = await fetchMyRequest();
+      if (refreshed != null) return refreshed;
+      throw const HousingRequestException(
+        'تم حفظ التعديل، لكن تعذّر عرض النتيجة — يرجى تحديث الشاشة.',
+        type: ApiErrorType.parsing,
+      );
     } on DioException catch (e) {
       throw _mapDioException(e);
     }

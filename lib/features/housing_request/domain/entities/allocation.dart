@@ -8,12 +8,16 @@ class Allocation extends Equatable {
     required this.roomNumber,
     required this.buildingName,
     required this.allocatedAt,
+    this.vacatedAt,
   });
 
   final String roomNumber;
   final String buildingName;
   final DateTime allocatedAt;
 
+  /// غير null إن كان الطالب قد أخلى هذه الغرفة فعلاً — سجل تاريخي.
+  final DateTime? vacatedAt;
+
   @override
-  List<Object?> get props => [roomNumber, buildingName, allocatedAt];
+  List<Object?> get props => [roomNumber, buildingName, allocatedAt, vacatedAt];
 }

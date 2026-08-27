@@ -33,4 +33,31 @@ void main() {
       expect(model.floor, 3);
     });
   });
+
+  group('AllocationModel', () {
+    test('parses vacatedAt when present', () {
+      final json = {
+        'roomNumber': '304',
+        'buildingName': 'مبنى C',
+        'allocatedAt': '2026-01-01T00:00:00Z',
+        'vacatedAt': '2026-06-01T00:00:00Z',
+      };
+
+      final model = AllocationModel.fromJson(json);
+
+      expect(model.vacatedAt, isNotNull);
+    });
+
+    test('leaves vacatedAt null when absent', () {
+      final json = {
+        'roomNumber': '304',
+        'buildingName': 'مبنى C',
+        'allocatedAt': '2026-01-01T00:00:00Z',
+      };
+
+      final model = AllocationModel.fromJson(json);
+
+      expect(model.vacatedAt, isNull);
+    });
+  });
 }
