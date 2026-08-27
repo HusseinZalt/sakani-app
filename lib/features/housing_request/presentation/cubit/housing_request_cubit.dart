@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_result.dart';
+import '../../domain/entities/building.dart';
+import '../../domain/entities/dorm_room.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
@@ -47,20 +49,34 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
     final requestResult = await _repository.fetchMyRequest();
     switch (requestResult) {
       case ApiSuccess<HousingRequest?>(:final data):
-        // نجلب المحافظات دائماً هون (وليس فقط لما ما يكون في طلب بعد):
-        // طلب موجود بحالة NeedsRevision لازم يعيد عرض نفس نموذج التعديل
-        // بقائمة المحافظات معبّأة، وإلا يبقى منتقي المحافظة فارغاً بدون
-        // أي خيارات — وهو تحديداً ما كان يحصل قبل هذا الإصلاح.
+        // نجلب المحافظات والأبنية دائماً هون (وليس فقط لما ما يكون في
+        // طلب بعد): طلب موجود بحالة NeedsRevision لازم يعيد عرض نفس
+        // نموذج التعديل بقائمة المحافظات معبّأة، وإلا يبقى منتقي
+        // المحافظة فارغاً بدون أي خيارات — وهو تحديداً ما كان يحصل قبل
+        // هذا الإصلاح.
         final governoratesResult = await _repository.fetchGovernorates();
         final governorates = switch (governoratesResult) {
           ApiSuccess<List<Governorate>>(:final data) => data,
           ApiFailureResult<List<Governorate>>() => const <Governorate>[],
         };
+        final buildingsResult = await _repository.fetchBuildings();
+        final buildings = switch (buildingsResult) {
+          ApiSuccess<List<Building>>(:final data) => data,
+          ApiFailureResult<List<Building>>() => const <Building>[],
+        };
         if (data != null) {
-          emit(HousingRequestSubmitted(data, governorates: governorates));
+          emit(
+            HousingRequestSubmitted(
+              data,
+              governorates: governorates,
+              buildings: buildings,
+            ),
+          );
           return;
         }
-        emit(HousingRequestEmpty(governorates: governorates));
+        emit(
+          HousingRequestEmpty(governorates: governorates, buildings: buildings),
+        );
       case ApiFailureResult<HousingRequest?>(:final failure):
         emit(HousingRequestFailure(failure));
     }
@@ -81,9 +97,22 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
 
     final result = await _repository.deleteRequest(current.request.id);
     if (result.isSuccess) {
-      emit(HousingRequestEmpty(governorates: current.governorates));
+      emit(
+        HousingRequestEmpty(
+          governorates: current.governorates,
+          buildings: current.buildings,
+        ),
+      );
     }
     return result;
+  }
+
+  /// غرف مبنى واحد، لملء اختيار "رقم الغرفة" بعد اختيار المبنى والطابق —
+  /// لا تؤثر على [state] الرئيسية (مجرد نداء بيانات يستخدمه النموذج
+  /// مباشرة)، بنفس نمط الوصول للبيانات دائماً عبر الكيوبت لا المستودع
+  /// مباشرة من الواجهة.
+  Future<ApiResult<List<DormRoom>>> fetchRoomsForBuilding(int buildingId) {
+    return _repository.fetchRoomsForBuilding(buildingId);
   }
 
   Future<void> submitRequest({

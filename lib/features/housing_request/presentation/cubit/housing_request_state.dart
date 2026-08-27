@@ -1,4 +1,5 @@
 import '../../../../core/network/api_result.dart';
+import '../../domain/entities/building.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_request.dart';
 
@@ -17,9 +18,15 @@ final class HousingRequestCycleClosed extends HousingRequestState {
 
 /// دورة مفتوحة ولا يوجد طلب سكن مقدَّم بعد — يُعرض النموذج فارغاً.
 final class HousingRequestEmpty extends HousingRequestState {
-  const HousingRequestEmpty({required this.governorates});
+  const HousingRequestEmpty({
+    required this.governorates,
+    this.buildings = const [],
+  });
 
   final List<Governorate> governorates;
+
+  /// لملء اختيار "المبنى السابق" بقسم "سكنت سابقاً".
+  final List<Building> buildings;
 }
 
 /// جارٍ إرسال/تعديل الطلب.
@@ -29,12 +36,17 @@ final class HousingRequestSubmitting extends HousingRequestState {
 
 /// يوجد طلب سكن مقدَّم (قيد المراجعة/يحتاج تعديل/صدر قرار).
 final class HousingRequestSubmitted extends HousingRequestState {
-  const HousingRequestSubmitted(this.request, {this.governorates = const []});
+  const HousingRequestSubmitted(
+    this.request, {
+    this.governorates = const [],
+    this.buildings = const [],
+  });
 
   final HousingRequest request;
 
   /// لازمة فقط لإعادة عرض نموذج التعديل عند حالة `NeedsRevision`.
   final List<Governorate> governorates;
+  final List<Building> buildings;
 }
 
 final class HousingRequestFailure extends HousingRequestState {

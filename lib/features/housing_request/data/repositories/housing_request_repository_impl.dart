@@ -1,4 +1,6 @@
 import '../../../../core/network/api_result.dart';
+import '../../domain/entities/building.dart';
+import '../../domain/entities/dorm_room.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
@@ -30,6 +32,32 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
     try {
       final governorates = await _remoteDataSource.fetchGovernorates();
       return ApiResult.success(governorates);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
+
+  @override
+  Future<ApiResult<List<Building>>> fetchBuildings() async {
+    try {
+      final buildings = await _remoteDataSource.fetchBuildings();
+      return ApiResult.success(buildings);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
+
+  @override
+  Future<ApiResult<List<DormRoom>>> fetchRoomsForBuilding(
+    int buildingId,
+  ) async {
+    try {
+      final rooms = await _remoteDataSource.fetchRoomsForBuilding(buildingId);
+      return ApiResult.success(rooms);
     } on HousingRequestException catch (e) {
       return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
     } catch (_) {

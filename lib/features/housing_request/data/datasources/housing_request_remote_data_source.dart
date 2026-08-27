@@ -67,6 +67,38 @@ class HousingRequestRemoteDataSource {
     }
   }
 
+  /// قائمة الأبنية السكنية — لملء اختيار "المبنى السابق" بقسم "سكنت
+  /// سابقاً"، بنفس نمط [fetchGovernorates].
+  Future<List<BuildingModel>> fetchBuildings() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/buildings');
+      final items = _asJsonList(response.data);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(BuildingModel.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
+  /// غرف مبنى واحد — تُستخدم لملء اختيار "رقم الغرفة" بعد فلترتها محلياً
+  /// حسب الطابق المختار.
+  Future<List<DormRoomModel>> fetchRoomsForBuilding(int buildingId) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/buildings/$buildingId/rooms',
+      );
+      final items = _asJsonList(response.data);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(DormRoomModel.fromJson)
+          .toList();
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
   /// طلب سكن واحد على الأكثر عادةً لكل طالب بكل دورة — نأخذ أول عنصر إن
   /// وُجد (`GET /api/housing-requests/mine` تُرجع مصفوفة).
   Future<HousingRequestModel?> fetchMyRequest() async {

@@ -1,4 +1,6 @@
 import '../../../../core/network/api_result.dart';
+import '../entities/building.dart';
+import '../entities/dorm_room.dart';
 import '../entities/governorate.dart';
 import '../entities/housing_cycle.dart';
 import '../entities/housing_document.dart';
@@ -12,6 +14,12 @@ abstract class HousingRequestRepository {
 
   /// قائمة المحافظات لملء نموذج التقديم.
   Future<ApiResult<List<Governorate>>> fetchGovernorates();
+
+  /// قائمة الأبنية لملء اختيار "المبنى السابق" بقسم "سكنت سابقاً".
+  Future<ApiResult<List<Building>>> fetchBuildings();
+
+  /// غرف مبنى واحد، لفلترتها حسب الطابق المختار وعرض أرقام غرف حقيقية.
+  Future<ApiResult<List<DormRoom>>> fetchRoomsForBuilding(int buildingId);
 
   /// جلب طلب السكن الحالي للطالب، أو null إن لم يقدَّم طلب بعد.
   Future<ApiResult<HousingRequest?>> fetchMyRequest();

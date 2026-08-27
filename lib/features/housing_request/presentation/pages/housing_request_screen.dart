@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
+import '../../../../core/network/api_result.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/utils/image_resize.dart';
@@ -15,6 +16,8 @@ import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/gradient_header.dart';
 import '../../../../core/widgets/refresh_on_tab_visible.dart';
 import '../../data/repositories/housing_request_repository_impl.dart';
+import '../../domain/entities/building.dart';
+import '../../domain/entities/dorm_room.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
@@ -120,18 +123,26 @@ class _HousingRequestView extends StatelessWidget {
                       ),
                     ),
                     HousingRequestCycleClosed() => const _CycleClosedView(),
-                    HousingRequestEmpty(:final governorates) =>
-                      _RequestFormView(governorates: governorates),
+                    HousingRequestEmpty(
+                      :final governorates,
+                      :final buildings,
+                    ) =>
+                      _RequestFormView(
+                        governorates: governorates,
+                        buildings: buildings,
+                      ),
                     HousingRequestSubmitting() => const Center(
                       child: CircularProgressIndicator(),
                     ),
                     HousingRequestSubmitted(
                       :final request,
                       :final governorates,
+                      :final buildings,
                     ) =>
                       request.status == HousingRequestStatus.needsRevision
                           ? _RequestFormView(
                             governorates: governorates,
+                            buildings: buildings,
                             existingRequest: request,
                           )
                           : _StatusView(request: request),
@@ -184,9 +195,14 @@ class _CycleClosedView extends StatelessWidget {
 /// نموذج تقديم/تعديل الطلب — نفس النموذج يُستخدم للحالتين: [existingRequest]
 /// null لطلب جديد، أو معبَّأ مسبقاً لتعديل طلب بحالة `NeedsRevision`.
 class _RequestFormView extends StatefulWidget {
-  const _RequestFormView({required this.governorates, this.existingRequest});
+  const _RequestFormView({
+    required this.governorates,
+    required this.buildings,
+    this.existingRequest,
+  });
 
   final List<Governorate> governorates;
+  final List<Building> buildings;
   final HousingRequest? existingRequest;
 
   @override
@@ -197,9 +213,9 @@ class _RequestFormViewState extends State<_RequestFormView> {
   final _imagePicker = ImagePicker();
   final _addressController = TextEditingController();
   final _notesController = TextEditingController();
-  final _previousFloorController = TextEditingController();
-  final _previousRoomController = TextEditingController();
-  final _previousBuildingIdController = TextEditingController();
+  // احتياطي فقط: يُستخدم لإدخال رقم الغرفة يدوياً حين يتعذّر جلب غرف
+  // المبنى الفعلية (فشل الطلب، أو لم تُسجَّل غرف لهذا الطابق بعد).
+  final _previousRoomFallbackController = TextEditingController();
 
   int? _governorateId;
   int _academicLevel = 1;
@@ -207,7 +223,18 @@ class _RequestFormViewState extends State<_RequestFormView> {
   bool _isPreviousResident = false;
   final Map<HousingDocumentType, HousingDocument> _documents = {};
 
+  int? _previousBuildingId;
+  int? _previousFloor;
+  String? _previousRoomNumber;
+  List<DormRoom> _roomsForSelectedBuilding = [];
+  bool _isLoadingRooms = false;
+  bool _roomsLoadFailed = false;
+
   bool get _isEditMode => widget.existingRequest != null;
+
+  Building? get _selectedBuilding => widget.buildings
+      .cast<Building?>()
+      .firstWhere((b) => b?.id == _previousBuildingId, orElse: () => null);
 
   @override
   void initState() {
@@ -220,10 +247,11 @@ class _RequestFormViewState extends State<_RequestFormView> {
       _notesController.text = existing.specialNotes ?? '';
       _hasSpecialNeeds = existing.hasSpecialNeeds;
       _isPreviousResident = existing.isPreviousResident;
-      _previousFloorController.text = existing.previousFloor?.toString() ?? '';
-      _previousRoomController.text = existing.previousRoomNumber ?? '';
-      _previousBuildingIdController.text =
-          existing.previousBuildingId?.toString() ?? '';
+      _previousBuildingId = existing.previousBuildingId;
+      _previousFloor = existing.previousFloor;
+      _previousRoomNumber = existing.previousRoomNumber;
+      _previousRoomFallbackController.text = existing.previousRoomNumber ?? '';
+      if (_previousBuildingId != null) _loadRoomsForBuilding();
       for (final doc in existing.documents) {
         _documents[doc.type] = doc;
       }
@@ -243,10 +271,35 @@ class _RequestFormViewState extends State<_RequestFormView> {
   void dispose() {
     _addressController.dispose();
     _notesController.dispose();
-    _previousFloorController.dispose();
-    _previousRoomController.dispose();
-    _previousBuildingIdController.dispose();
+    _previousRoomFallbackController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRoomsForBuilding() async {
+    final buildingId = _previousBuildingId;
+    if (buildingId == null) return;
+
+    setState(() {
+      _isLoadingRooms = true;
+      _roomsLoadFailed = false;
+    });
+
+    final result = await context
+        .read<HousingRequestCubit>()
+        .fetchRoomsForBuilding(buildingId);
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingRooms = false;
+      switch (result) {
+        case ApiSuccess<List<DormRoom>>(:final data):
+          _roomsForSelectedBuilding = data;
+          _roomsLoadFailed = false;
+        case ApiFailureResult<List<DormRoom>>():
+          _roomsForSelectedBuilding = [];
+          _roomsLoadFailed = true;
+      }
+    });
   }
 
   Future<void> _pickDocument(HousingDocumentType type) async {
@@ -336,19 +389,28 @@ class _RequestFormViewState extends State<_RequestFormView> {
       );
       return;
     }
-    if (_isPreviousResident &&
-        _previousBuildingIdController.text.trim().isEmpty) {
-      _showMessage('يرجى إدخال رقم المبنى السابق، أو إلغاء "سكنت سابقاً".');
-      return;
+    if (_isPreviousResident) {
+      if (_previousBuildingId == null) {
+        _showMessage('يرجى اختيار المبنى السابق، أو إلغاء "سكنت سابقاً".');
+        return;
+      }
+      final floorsCount = _selectedBuilding?.floorsCount;
+      if (floorsCount != null && floorsCount > 0 && _previousFloor == null) {
+        _showMessage('يرجى اختيار الطابق السابق.');
+        return;
+      }
+      if (_previousFloor != null &&
+          (_previousRoomNumber == null || _previousRoomNumber!.isEmpty)) {
+        _showMessage('يرجى اختيار رقم الغرفة السابقة.');
+        return;
+      }
     }
 
     final cubit = context.read<HousingRequestCubit>();
     final gender = widget.existingRequest?.gender ?? _prefilledGender;
-    final previousBuildingId = int.tryParse(
-      _previousBuildingIdController.text.trim(),
-    );
-    final previousFloor = int.tryParse(_previousFloorController.text.trim());
-    final previousRoom = _previousRoomController.text.trim();
+    final previousBuildingId = _previousBuildingId;
+    final previousFloor = _previousFloor;
+    final previousRoom = _previousRoomNumber?.trim() ?? '';
     final notes = _notesController.text.trim();
 
     if (_isEditMode) {
@@ -537,29 +599,148 @@ class _RequestFormViewState extends State<_RequestFormView> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'رقم المبنى كما هو مسجَّل بإدارة السكن',
+                    'المبنى',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  CustomTextField(
-                    controller: _previousBuildingIdController,
-                    label: 'رقم المبنى',
-                    hint: 'مثال: 3',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  CustomTextField(
-                    controller: _previousFloorController,
-                    label: 'الطابق (اختياري)',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  CustomTextField(
-                    controller: _previousRoomController,
-                    label: 'رقم الغرفة (اختياري)',
-                  ),
+                  const SizedBox(height: 10),
+                  if (widget.buildings.isEmpty)
+                    Text(
+                      'تعذّر تحميل قائمة الأبنية، حاول لاحقاً.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.error,
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children:
+                          widget.buildings.map((building) {
+                            return CustomChip(
+                              label: building.name,
+                              selected: _previousBuildingId == building.id,
+                              onTap: () {
+                                if (_previousBuildingId == building.id) return;
+                                setState(() {
+                                  _previousBuildingId = building.id;
+                                  _previousFloor = null;
+                                  _previousRoomNumber = null;
+                                  _previousRoomFallbackController.clear();
+                                  _roomsForSelectedBuilding = [];
+                                });
+                                _loadRoomsForBuilding();
+                              },
+                            );
+                          }).toList(),
+                    ),
+                  if (_previousBuildingId != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'الطابق',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_selectedBuilding?.floorsCount == null ||
+                        _selectedBuilding!.floorsCount! <= 0)
+                      Text(
+                        'لم يُسجَّل عدد الطوابق لهذا المبنى بعد.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            List.generate(
+                              _selectedBuilding!.floorsCount!,
+                              (i) => i + 1,
+                            ).map((floor) {
+                              return CustomChip(
+                                label: 'الطابق $floor',
+                                selected: _previousFloor == floor,
+                                onTap: () {
+                                  if (_previousFloor == floor) return;
+                                  setState(() {
+                                    _previousFloor = floor;
+                                    _previousRoomNumber = null;
+                                    _previousRoomFallbackController.clear();
+                                  });
+                                },
+                              );
+                            }).toList(),
+                      ),
+                  ],
+                  if (_previousFloor != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'رقم الغرفة',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Builder(
+                      builder: (context) {
+                        if (_isLoadingRooms) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
+                        final roomsOnFloor =
+                            _roomsForSelectedBuilding
+                                .where((r) => r.floor == _previousFloor)
+                                .toList();
+                        if (roomsOnFloor.isEmpty) {
+                          // احتياطي: فشل جلب الغرف، أو لا غرف مسجَّلة لهذا
+                          // الطابق بعد — إدخال يدوي بدل تعطيل القسم كاملاً.
+                          return CustomTextField(
+                            controller: _previousRoomFallbackController,
+                            label:
+                                _roomsLoadFailed
+                                    ? 'رقم الغرفة (تعذّر تحميل قائمة الغرف)'
+                                    : 'رقم الغرفة (لا توجد غرف مسجَّلة لهذا الطابق)',
+                            onChanged:
+                                (value) => setState(
+                                  () =>
+                                      _previousRoomNumber =
+                                          value.trim().isEmpty
+                                              ? null
+                                              : value.trim(),
+                                ),
+                          );
+                        }
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children:
+                              roomsOnFloor.map((room) {
+                                return CustomChip(
+                                  label: room.roomNumber,
+                                  selected:
+                                      _previousRoomNumber == room.roomNumber,
+                                  onTap:
+                                      () => setState(
+                                        () =>
+                                            _previousRoomNumber =
+                                                room.roomNumber,
+                                      ),
+                                );
+                              }).toList(),
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -12,6 +12,8 @@ import 'package:sakani/features/groups/domain/entities/student_group.dart';
 import 'package:sakani/features/groups/domain/repositories/groups_repository.dart';
 import 'package:sakani/features/groups/presentation/cubit/groups_cubit.dart';
 import 'package:sakani/features/groups/presentation/cubit/groups_state.dart';
+import 'package:sakani/features/housing_request/domain/entities/building.dart';
+import 'package:sakani/features/housing_request/domain/entities/dorm_room.dart';
 import 'package:sakani/features/housing_request/domain/entities/governorate.dart';
 import 'package:sakani/features/housing_request/domain/entities/housing_cycle.dart';
 import 'package:sakani/features/housing_request/domain/entities/housing_document.dart';
@@ -156,6 +158,14 @@ class _FakeHousingRequestRepository implements HousingRequestRepository {
         ? ApiResult.failure(ApiFailure.unknown('فشل حذف طلب السكن'))
         : ApiResult.success(null);
   }
+
+  @override
+  Future<ApiResult<List<Building>>> fetchBuildings() =>
+      throw UnimplementedError();
+
+  @override
+  Future<ApiResult<List<DormRoom>>> fetchRoomsForBuilding(int buildingId) =>
+      throw UnimplementedError();
 }
 
 class _FakeMaintenanceRepository implements MaintenanceRepository {

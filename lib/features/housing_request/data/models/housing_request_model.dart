@@ -1,6 +1,8 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/parse_utc_date_time.dart';
 import '../../domain/entities/allocation.dart';
+import '../../domain/entities/building.dart';
+import '../../domain/entities/dorm_room.dart';
 import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_cycle.dart';
 import '../../domain/entities/housing_document.dart';
@@ -29,6 +31,38 @@ class GovernorateModel extends Governorate {
     return GovernorateModel(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
+    );
+  }
+}
+
+class BuildingModel extends Building {
+  const BuildingModel({
+    required super.id,
+    required super.name,
+    super.floorsCount,
+  });
+
+  factory BuildingModel.fromJson(Map<String, dynamic> json) {
+    return BuildingModel(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      floorsCount: json['floorsCount'] as int?,
+    );
+  }
+}
+
+class DormRoomModel extends DormRoom {
+  const DormRoomModel({
+    required super.id,
+    required super.roomNumber,
+    required super.floor,
+  });
+
+  factory DormRoomModel.fromJson(Map<String, dynamic> json) {
+    return DormRoomModel(
+      id: json['id'] as int,
+      roomNumber: json['roomNumber'] as String? ?? '',
+      floor: json['floor'] as int? ?? 0,
     );
   }
 }
