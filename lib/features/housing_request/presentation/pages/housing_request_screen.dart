@@ -55,10 +55,18 @@ class _HousingRequestView extends StatelessWidget {
     // تطلب هذه الإشارة عند اختيار "إرسال طلب جديد" حتى تعرض هذه الشاشة
     // نموذج تقديم فارغاً فوراً بدل حالة "مرفوض" العالقة.
     if (HousingRequestResetSignal.consume()) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          context.read<HousingRequestCubit>().startNewRequestAfterRejection();
-        }
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!context.mounted) return;
+        final result =
+            await context
+                .read<HousingRequestCubit>()
+                .startNewRequestAfterRejection();
+        if (!context.mounted || result.isSuccess) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(result.failureOrNull!.message)),
+          );
       });
     }
 

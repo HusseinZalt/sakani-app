@@ -46,4 +46,8 @@ abstract class HousingRequestRepository {
     String? specialNotes,
     required List<HousingDocument> replacedDocuments,
   });
+
+  /// حذف طلب سكن — الطالب يحذف طلبه هو فقط. يُرفض إن كان الطالب مُسكّناً
+  /// فعلياً (لازم إخلاء المبنى أولاً من جهة الإدارة).
+  Future<ApiResult<void>> deleteRequest(int requestId);
 }

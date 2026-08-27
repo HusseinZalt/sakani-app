@@ -122,4 +122,16 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
       return ApiResult.failure(ApiFailure.unknown());
     }
   }
+
+  @override
+  Future<ApiResult<void>> deleteRequest(int requestId) async {
+    try {
+      await _remoteDataSource.deleteRequest(requestId);
+      return ApiResult.success(null);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
 }

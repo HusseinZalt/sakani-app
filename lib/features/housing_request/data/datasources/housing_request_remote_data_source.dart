@@ -158,6 +158,19 @@ class HousingRequestRemoteDataSource {
     }
   }
 
+  /// يحذف طلب سكن — مسموح فقط للطالب على طلبه هو (التحقق من الملكية من
+  /// جهة الباك إند)، ويُرفض بـ 400 إن كان الطالب مُسكّناً فعلياً (لازم
+  /// إخلاء المبنى أولاً). حسب توثيق الباك إند (2026-08-27) هذا الحذف
+  /// يغادر الطالب تلقائياً من غروبه إن كان فيه، ويُلغي طلبات انضمامه
+  /// المعلّقة لغروبات أخرى، ويحذف مستنداته من التخزين السحابي.
+  Future<void> deleteRequest(int requestId) async {
+    try {
+      await _dio.delete<dynamic>('/api/housing-requests/$requestId');
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
   FormData _buildFormData({
     required int gender,
     required int governorateId,

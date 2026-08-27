@@ -103,7 +103,9 @@ class _FakeNotificationsRepository implements NotificationsRepository {
 }
 
 class _FakeHousingRequestRepository implements HousingRequestRepository {
-  const _FakeHousingRequestRepository();
+  const _FakeHousingRequestRepository({this.shouldFailDelete = false});
+
+  final bool shouldFailDelete;
 
   @override
   Future<ApiResult<HousingCycle?>> fetchCurrentCycle() =>
@@ -147,6 +149,13 @@ class _FakeHousingRequestRepository implements HousingRequestRepository {
     String? specialNotes,
     required List<HousingDocument> replacedDocuments,
   }) => throw UnimplementedError();
+
+  @override
+  Future<ApiResult<void>> deleteRequest(int requestId) async {
+    return shouldFailDelete
+        ? ApiResult.failure(ApiFailure.unknown('فشل حذف طلب السكن'))
+        : ApiResult.success(null);
+  }
 }
 
 class _FakeMaintenanceRepository implements MaintenanceRepository {
@@ -321,11 +330,44 @@ void main() {
       final cubit = HousingRequestCubit(const _FakeHousingRequestRepository());
       cubit.emit(HousingRequestSubmitted(rejected, governorates: governorates));
 
-      cubit.startNewRequestAfterRejection();
+      final result = await cubit.startNewRequestAfterRejection();
 
+      expect(result.isSuccess, isTrue);
       expect(cubit.state, isA<HousingRequestEmpty>());
       final state = cubit.state as HousingRequestEmpty;
       expect(state.governorates, governorates);
     },
   );
+
+  test('إذا فشل حذف الطلب المرفوض، تبقى حالة الرفض كما هي', () async {
+    final rejected = HousingRequest(
+      id: 1,
+      gender: 0,
+      governorateId: 1,
+      academicLevel: 1,
+      detailedAddress: 'عنوان تجريبي',
+      hasSpecialNeeds: false,
+      isPreviousResident: false,
+      status: HousingRequestStatus.locked,
+      submittedAt: DateTime.now(),
+      decision: const AdmissionDecision(
+        status: AdmissionDecisionStatus.rejected,
+      ),
+    );
+    const governorates = [Governorate(id: 1, name: 'دمشق')];
+
+    final cubit = HousingRequestCubit(
+      const _FakeHousingRequestRepository(shouldFailDelete: true),
+    );
+    final submitted = HousingRequestSubmitted(
+      rejected,
+      governorates: governorates,
+    );
+    cubit.emit(submitted);
+
+    final result = await cubit.startNewRequestAfterRejection();
+
+    expect(result.isFailure, isTrue);
+    expect(cubit.state, submitted);
+  });
 }

@@ -66,15 +66,24 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
     }
   }
 
-  /// يعرض نموذج تقديم فارغ فوراً فوق حالة "مرفوض" الحالية — الباك إند
-  /// يسمح بتقديم طلب جديد بعد الرفض، لكن آخر طلب معروف يبقى مرفوضاً
-  /// (لا يختفي تلقائياً من [fetchMyRequest])، فبدون هذا يبقى المستخدم
-  /// عالقاً بشاشة "مرفوض" للأبد بلا طريقة للمتابعة.
-  void startNewRequestAfterRejection() {
+  /// يحذف طلب السكن المرفوض الحالي ثم يعرض نموذج تقديم فارغاً — الحذف
+  /// ضروري وليس تجميلاً فقط: `/mine` قد ترجع أكثر من طلب، والتطبيق يعرض
+  /// أولها فقط، فبدون حذف الطلب المرفوض قد يستمر ظهوره بدل الطلب الجديد
+  /// المُقدَّم فعلاً. يبقى المستخدم على حالة "مرفوض" الحالية إن فشل الحذف
+  /// (نادراً — يُرفض الحذف فقط إن كان الطالب مُسكّناً فعلياً، وهو مستبعَد
+  /// لطلب مرفوض) حتى لا يظهر نموذج تقديم فارغ بينما الطلب القديم لا يزال
+  /// موجوداً فعلياً على الخادم.
+  Future<ApiResult<void>> startNewRequestAfterRejection() async {
     final current = state;
-    if (current is HousingRequestSubmitted) {
+    if (current is! HousingRequestSubmitted) {
+      return ApiResult.success(null);
+    }
+
+    final result = await _repository.deleteRequest(current.request.id);
+    if (result.isSuccess) {
       emit(HousingRequestEmpty(governorates: current.governorates));
     }
+    return result;
   }
 
   Future<void> submitRequest({
