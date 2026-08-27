@@ -47,4 +47,9 @@ abstract class AuthRepository {
   /// المحفوظ محلياً على الخادم، بحيث لا يبقى صالحاً للاستخدام بعد مسح
   /// الجلسة محلياً.
   Future<ApiResult<void>> logout();
+
+  /// تشغيل/إيقاف تفضيل إشعارات الدفع لهذا الحساب — راجع توثيق
+  /// [AuthUser.notificationsEnabled] للتفاصيل. تُرجع القيمة الفعلية
+  /// المؤكَّدة من الخادم.
+  Future<ApiResult<bool>> updateNotificationsEnabled(bool enabled);
 }

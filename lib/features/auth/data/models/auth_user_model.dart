@@ -25,6 +25,7 @@ class AuthUserModel extends AuthUser {
     super.role,
     super.verificationStatus,
     super.gender,
+    super.notificationsEnabled,
   });
 
   factory AuthUserModel.fromJson(Map<String, dynamic> json) {
@@ -48,6 +49,7 @@ class AuthUserModel extends AuthUser {
       role: json['role'] as String?,
       verificationStatus: json['verificationStatus'] as String?,
       gender: json['gender'] as String?,
+      notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
     );
   }
 }

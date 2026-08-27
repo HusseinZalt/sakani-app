@@ -26,6 +26,7 @@ class AuthUser extends Equatable {
     this.role,
     this.verificationStatus,
     this.gender,
+    this.notificationsEnabled = true,
   });
 
   final String id;
@@ -53,6 +54,12 @@ class AuthUser extends Equatable {
   /// منفصلة تماماً عن [isVerified] ولا تمنع تسجيل الدخول.
   final String? verificationStatus;
 
+  /// تفضيل شخصي على مستوى الحساب (خدمة المصادقة): يوقف إرسال إشعارات
+  /// الدفع (Push) لهذا المستخدم بالكامل من جهة الخادم — منفصل تماماً عن
+  /// تفضيلات فئات الإشعارات المحلية (`NotificationPreferences`) وعن رمز
+  /// الجهاز (FCM)، الذي يستمر تسجيله بشكل طبيعي بغض النظر عن هذه القيمة.
+  final bool notificationsEnabled;
+
   /// نسخة معدّلة من المستخدم، تُستخدم عند حفظ تعديلات الملف الشخصي.
   AuthUser copyWith({
     String? fullName,
@@ -68,6 +75,7 @@ class AuthUser extends Equatable {
     String? role,
     String? verificationStatus,
     String? gender,
+    bool? notificationsEnabled,
   }) {
     return AuthUser(
       id: id,
@@ -84,6 +92,7 @@ class AuthUser extends Equatable {
       role: role ?? this.role,
       verificationStatus: verificationStatus ?? this.verificationStatus,
       gender: gender ?? this.gender,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     );
   }
 
@@ -102,6 +111,7 @@ class AuthUser extends Equatable {
     gender,
     isVerified,
     role,
+    notificationsEnabled,
     verificationStatus,
   ];
 }

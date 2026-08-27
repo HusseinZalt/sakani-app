@@ -14,7 +14,7 @@ class SupportScreen extends StatelessWidget {
 
   static const _phoneNumber = '+963967146105';
   static const _whatsappNumber = '+963967146105';
-  static const _email = 'SakaniSakani@gmail.com';
+  static const _email = 'SakaniSakani011@gmail.com';
   static const _workingHours = 'الأحد – الخميس، 9 صباحاً – 4 عصراً';
 
   Future<void> _launch(BuildContext context, Uri uri) async {

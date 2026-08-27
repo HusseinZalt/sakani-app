@@ -33,6 +33,7 @@ class SessionStorage {
         'nationalId': user.nationalId,
         'isVerified': user.isVerified,
         'gender': user.gender,
+        'notificationsEnabled': user.notificationsEnabled,
       }),
     );
   }
@@ -57,6 +58,7 @@ class SessionStorage {
         nationalId: json['nationalId'] as String?,
         isVerified: json['isVerified'] as bool? ?? true,
         gender: json['gender'] as String?,
+        notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
       );
     } catch (_) {
       return null;

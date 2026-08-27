@@ -111,4 +111,18 @@ class AuthRepositoryImpl implements AuthRepository {
       return ApiResult.failure(ApiFailure.unknown());
     }
   }
+
+  @override
+  Future<ApiResult<bool>> updateNotificationsEnabled(bool enabled) async {
+    try {
+      final result = await _remoteDataSource.updateNotificationsEnabled(
+        enabled,
+      );
+      return ApiResult.success(result);
+    } on AuthException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
 }

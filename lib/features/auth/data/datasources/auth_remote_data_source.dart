@@ -146,6 +146,27 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// تفضيل شخصي (متاح لأي دور) يوقف/يشغّل إرسال إشعارات الدفع لهذا
+  /// الحساب من جهة الخادم بالكامل — لا علاقة له بـ fcmToken (يستمر
+  /// تسجيله بشكل طبيعي بغض النظر عن هذه القيمة، راجع توثيق [AuthUser]).
+  ///
+  /// نقرأ فقط `notificationsEnabled` من استجابة الخادم بدل تحليلها ككائن
+  /// [AuthUserModel] كامل — لا نعرف يقيناً أنها ترجع كل حقول المستخدم
+  /// (مثال التوثيق المصدر يوضح فقط أنها ترجع الحقل هذا صراحة)، وتحليلها
+  /// ككائن كامل كان سيطرح استثناءً لو كانت جزئية.
+  Future<bool> updateNotificationsEnabled(bool enabled) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/auth/me',
+        data: {'notificationsEnabled': enabled},
+      );
+      final data = response.data?['data'] as Map<String, dynamic>?;
+      return data?['notificationsEnabled'] as bool? ?? enabled;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await SessionStorage.loadRefreshToken();
     if (refreshToken == null) return;

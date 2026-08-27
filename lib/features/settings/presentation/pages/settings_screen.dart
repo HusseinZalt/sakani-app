@@ -24,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _housingNotifications = true;
   bool _complaintsNotifications = true;
   bool _generalNotifications = true;
+  bool _isUpdatingMasterToggle = false;
 
   @override
   void initState() {
@@ -41,6 +42,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _complaintsNotifications = complaints;
       _generalNotifications = general;
     });
+  }
+
+  /// مفتاح رئيسي على مستوى الحساب نفسه (خدمة المصادقة) — عند إيقافه لا
+  /// يرسل الخادم أي إشعار دفع لهذا المستخدم إطلاقاً، بغض النظر عن
+  /// تفضيلات الفئات أدناه (المحفوظة محلياً فقط على هذا الجهاز). منفصل
+  /// تماماً عن رمز الجهاز (FCM)، الذي يستمر تسجيله بشكل طبيعي دائماً.
+  Future<void> _handleMasterToggle(bool value) async {
+    if (_isUpdatingMasterToggle) return;
+    setState(() => _isUpdatingMasterToggle = true);
+
+    final sessionCubit = context.read<UserSessionCubit>();
+    final result = await AuthRepositoryImpl().updateNotificationsEnabled(value);
+
+    if (!mounted) return;
+    setState(() => _isUpdatingMasterToggle = false);
+
+    if (result.isSuccess) {
+      final currentUser = sessionCubit.state;
+      if (currentUser != null) {
+        sessionCubit.setUser(
+          currentUser.copyWith(notificationsEnabled: result.dataOrNull),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.failureOrNull!.message)));
+    }
   }
 
   @override
@@ -72,46 +101,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  CustomCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      children: [
-                        SwitchListTile(
-                          value: _housingNotifications,
-                          onChanged: (value) {
-                            setState(() => _housingNotifications = value);
-                            NotificationPreferences.setHousingEnabled(value);
-                          },
-                          title: const Text('إشعارات طلبات السكن'),
-                          subtitle: const Text('تحديثات حالة الطلب والدفع'),
-                          activeColor: AppColors.primary,
-                        ),
-                        const Divider(height: 1),
-                        SwitchListTile(
-                          value: _complaintsNotifications,
-                          onChanged: (value) {
-                            setState(() => _complaintsNotifications = value);
-                            NotificationPreferences.setComplaintsEnabled(value);
-                          },
-                          title: const Text('إشعارات الشكاوى والاقتراحات'),
-                          subtitle: const Text('ردود الإدارة'),
-                          activeColor: AppColors.primary,
-                        ),
-                        const Divider(height: 1),
-                        SwitchListTile(
-                          value: _generalNotifications,
-                          onChanged: (value) {
-                            setState(() => _generalNotifications = value);
-                            NotificationPreferences.setGeneralEnabled(value);
-                          },
-                          title: const Text('إشعارات عامة'),
-                          subtitle: const Text(
-                            'إعلانات وتنبيهات المدينة الجامعية',
+                  Builder(
+                    builder: (context) {
+                      final notificationsEnabled =
+                          context
+                              .watch<UserSessionCubit>()
+                              .state
+                              ?.notificationsEnabled ??
+                          true;
+
+                      return Column(
+                        children: [
+                          CustomCard(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: SwitchListTile(
+                              value: notificationsEnabled,
+                              onChanged:
+                                  _isUpdatingMasterToggle
+                                      ? null
+                                      : _handleMasterToggle,
+                              title: const Text('تفعيل الإشعارات'),
+                              subtitle: const Text(
+                                'مفتاح رئيسي — إيقافه يمنع وصول أي إشعار دفع لحسابك',
+                              ),
+                              activeColor: AppColors.primary,
+                            ),
                           ),
-                          activeColor: AppColors.primary,
-                        ),
-                      ],
-                    ),
+                          const SizedBox(height: 12),
+                          CustomCard(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Column(
+                              children: [
+                                SwitchListTile(
+                                  value:
+                                      notificationsEnabled &&
+                                      _housingNotifications,
+                                  onChanged:
+                                      notificationsEnabled
+                                          ? (value) {
+                                            setState(
+                                              () =>
+                                                  _housingNotifications = value,
+                                            );
+                                            NotificationPreferences.setHousingEnabled(
+                                              value,
+                                            );
+                                          }
+                                          : null,
+                                  title: const Text('إشعارات طلبات السكن'),
+                                  subtitle: const Text(
+                                    'تحديثات حالة الطلب والدفع',
+                                  ),
+                                  activeColor: AppColors.primary,
+                                ),
+                                const Divider(height: 1),
+                                SwitchListTile(
+                                  value:
+                                      notificationsEnabled &&
+                                      _complaintsNotifications,
+                                  onChanged:
+                                      notificationsEnabled
+                                          ? (value) {
+                                            setState(
+                                              () =>
+                                                  _complaintsNotifications =
+                                                      value,
+                                            );
+                                            NotificationPreferences.setComplaintsEnabled(
+                                              value,
+                                            );
+                                          }
+                                          : null,
+                                  title: const Text(
+                                    'إشعارات الشكاوى والاقتراحات',
+                                  ),
+                                  subtitle: const Text('ردود الإدارة'),
+                                  activeColor: AppColors.primary,
+                                ),
+                                const Divider(height: 1),
+                                SwitchListTile(
+                                  value:
+                                      notificationsEnabled &&
+                                      _generalNotifications,
+                                  onChanged:
+                                      notificationsEnabled
+                                          ? (value) {
+                                            setState(
+                                              () =>
+                                                  _generalNotifications = value,
+                                            );
+                                            NotificationPreferences.setGeneralEnabled(
+                                              value,
+                                            );
+                                          }
+                                          : null,
+                                  title: const Text('إشعارات عامة'),
+                                  subtitle: const Text(
+                                    'إعلانات وتنبيهات المدينة الجامعية',
+                                  ),
+                                  activeColor: AppColors.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 22),
                   Text(
