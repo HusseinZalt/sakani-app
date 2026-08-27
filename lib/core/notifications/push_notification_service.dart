@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -6,7 +7,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../features/housing_request/data/repositories/housing_request_repository_impl.dart';
+import '../../features/housing_request/domain/entities/housing_request.dart';
+import '../../features/housing_request/presentation/cubit/housing_request_reset_signal.dart';
+import '../network/api_result.dart';
 import '../routing/app_router.dart';
+import '../widgets/housing_rejected_dialog.dart';
 import 'notification_preferences.dart';
 import 'notifications_badge_cubit.dart';
 
@@ -77,8 +83,7 @@ class PushNotificationService {
     );
 
     // التطبيق كان مغلقاً تماماً وفُتح بالضغط على الإشعار.
-    final initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) _navigateFromData(initialMessage.data);
   }
 
@@ -143,6 +148,38 @@ class PushNotificationService {
     if (context != null && context.mounted) {
       context.read<NotificationsBadgeCubit>().increment();
     }
+
+    // إشعارات "housing" عامة (قيد المراجعة/قرار...)، فنتحقق من الحالة
+    // الفعلية لمعرفة إذا كانت رفضاً تحديداً — عندها تظهر نافذة "طلبك
+    // انرفض" فوراً فوق أي شاشة مفتوحة، بنفس منطق نافذة الرئيسية عند فتح
+    // التطبيق (راجع `home_screen.dart`) لكن أثناء استخدام فعلي للتطبيق.
+    if (type == 'housing') {
+      unawaited(_checkForRejectionAndAlert());
+    }
+  }
+
+  Future<void> _checkForRejectionAndAlert() async {
+    final result = await HousingRequestRepositoryImpl().fetchMyRequest();
+    if (result is! ApiSuccess<HousingRequest?>) return;
+
+    final request = result.data;
+    if (request == null ||
+        request.decision?.status != AdmissionDecisionStatus.rejected) {
+      return;
+    }
+
+    final context = AppRouter.rootNavigatorKey.currentContext;
+    if (context == null || !context.mounted) return;
+
+    await showHousingRejectedDialog(
+      context,
+      reason: request.decision?.decisionReason,
+      onCancel: () {},
+      onResubmit: () {
+        HousingRequestResetSignal.request();
+        AppRouter.router.goNamed(AppRoutes.housingRequest);
+      },
+    );
   }
 
   /// يوجّه المستخدم للشاشة المناسبة حسب حمولة الإشعار (`type`/`relatedId`)،

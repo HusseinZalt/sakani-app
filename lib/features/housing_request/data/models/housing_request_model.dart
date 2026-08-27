@@ -91,9 +91,7 @@ class AdmissionDecisionModel extends AdmissionDecision {
   factory AdmissionDecisionModel.fromJson(Map<String, dynamic> json) {
     final decisionDate = json['decisionDate'] as String?;
     return AdmissionDecisionModel(
-      status: AdmissionDecisionStatus.fromApiValue(
-        json['status'] as int? ?? 0,
-      ),
+      status: AdmissionDecisionStatus.fromApiValue(json['status'] as int? ?? 0),
       decisionReason: json['decisionReason'] as String?,
       decisionDate:
           decisionDate != null ? parseUtcDateTime(decisionDate) : null,

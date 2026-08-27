@@ -66,6 +66,17 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
     }
   }
 
+  /// يعرض نموذج تقديم فارغ فوراً فوق حالة "مرفوض" الحالية — الباك إند
+  /// يسمح بتقديم طلب جديد بعد الرفض، لكن آخر طلب معروف يبقى مرفوضاً
+  /// (لا يختفي تلقائياً من [fetchMyRequest])، فبدون هذا يبقى المستخدم
+  /// عالقاً بشاشة "مرفوض" للأبد بلا طريقة للمتابعة.
+  void startNewRequestAfterRejection() {
+    final current = state;
+    if (current is HousingRequestSubmitted) {
+      emit(HousingRequestEmpty(governorates: current.governorates));
+    }
+  }
+
   Future<void> submitRequest({
     required int gender,
     required int governorateId,

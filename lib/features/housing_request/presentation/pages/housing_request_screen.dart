@@ -19,6 +19,7 @@ import '../../domain/entities/governorate.dart';
 import '../../domain/entities/housing_document.dart';
 import '../../domain/entities/housing_request.dart';
 import '../cubit/housing_request_cubit.dart';
+import '../cubit/housing_request_reset_signal.dart';
 import '../cubit/housing_request_state.dart';
 import '../housing_request_labels.dart';
 
@@ -49,6 +50,17 @@ class _HousingRequestView extends StatelessWidget {
     // الشرح المفصَّل بـ home_screen.dart._HomeView حول سبب عدم كفاية
     // آلية إعادة البناء الكاملة بـ main.dart لفروع StatefulShellRoute.
     context.watch<ThemeController>();
+
+    // نافذة "طلبك انرفض" (راجع home_screen.dart وpush_notification_service)
+    // تطلب هذه الإشارة عند اختيار "إرسال طلب جديد" حتى تعرض هذه الشاشة
+    // نموذج تقديم فارغاً فوراً بدل حالة "مرفوض" العالقة.
+    if (HousingRequestResetSignal.consume()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          context.read<HousingRequestCubit>().startNewRequestAfterRejection();
+        }
+      });
+    }
 
     return RefreshOnTabVisible(
       onVisible: () => context.read<HousingRequestCubit>().fetchMyRequest(),

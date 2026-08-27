@@ -26,7 +26,8 @@ class HousingRequestException implements Exception {
 /// قيمة الدور بالتوكن (`student` من خدمة المصادقة) مع الدور المتوقَّع
 /// (`user`) — تم إصلاحه من جهة الباك إند.
 class HousingRequestRemoteDataSource {
-  HousingRequestRemoteDataSource({Dio? dio}) : _dio = dio ?? ApiClient.housing.dio;
+  HousingRequestRemoteDataSource({Dio? dio})
+    : _dio = dio ?? ApiClient.housing.dio;
 
   final Dio _dio;
 

@@ -12,6 +12,13 @@ import 'package:sakani/features/groups/domain/entities/student_group.dart';
 import 'package:sakani/features/groups/domain/repositories/groups_repository.dart';
 import 'package:sakani/features/groups/presentation/cubit/groups_cubit.dart';
 import 'package:sakani/features/groups/presentation/cubit/groups_state.dart';
+import 'package:sakani/features/housing_request/domain/entities/governorate.dart';
+import 'package:sakani/features/housing_request/domain/entities/housing_cycle.dart';
+import 'package:sakani/features/housing_request/domain/entities/housing_document.dart';
+import 'package:sakani/features/housing_request/domain/entities/housing_request.dart';
+import 'package:sakani/features/housing_request/domain/repositories/housing_request_repository.dart';
+import 'package:sakani/features/housing_request/presentation/cubit/housing_request_cubit.dart';
+import 'package:sakani/features/housing_request/presentation/cubit/housing_request_state.dart';
 import 'package:sakani/features/maintenance/domain/entities/maintenance_request.dart';
 import 'package:sakani/features/maintenance/domain/repositories/maintenance_repository.dart';
 import 'package:sakani/features/maintenance/presentation/cubit/maintenance_list_cubit.dart';
@@ -93,6 +100,53 @@ class _FakeNotificationsRepository implements NotificationsRepository {
         ? ApiResult.failure(ApiFailure.unknown('فشل تحديث الإشعار'))
         : ApiResult.success(null);
   }
+}
+
+class _FakeHousingRequestRepository implements HousingRequestRepository {
+  const _FakeHousingRequestRepository();
+
+  @override
+  Future<ApiResult<HousingCycle?>> fetchCurrentCycle() =>
+      throw UnimplementedError();
+
+  @override
+  Future<ApiResult<List<Governorate>>> fetchGovernorates() =>
+      throw UnimplementedError();
+
+  @override
+  Future<ApiResult<HousingRequest?>> fetchMyRequest() =>
+      throw UnimplementedError();
+
+  @override
+  Future<ApiResult<HousingRequest>> submitRequest({
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> documents,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<ApiResult<HousingRequest>> updateRequest({
+    required int requestId,
+    required int gender,
+    required int governorateId,
+    required int academicLevel,
+    required String detailedAddress,
+    required bool hasSpecialNeeds,
+    required bool isPreviousResident,
+    int? previousBuildingId,
+    int? previousFloor,
+    String? previousRoomNumber,
+    String? specialNotes,
+    required List<HousingDocument> replacedDocuments,
+  }) => throw UnimplementedError();
 }
 
 class _FakeMaintenanceRepository implements MaintenanceRepository {
@@ -243,4 +297,35 @@ void main() {
     expect(state.requests, hasLength(1));
     expect(state.requests.first.id, 'm1');
   });
+
+  test(
+    'بعد رفض طلب السكن، يعرض نموذج تقديم فارغاً بدل حالة الرفض العالقة',
+    () async {
+      final rejected = HousingRequest(
+        id: 1,
+        gender: 0,
+        governorateId: 1,
+        academicLevel: 1,
+        detailedAddress: 'عنوان تجريبي',
+        hasSpecialNeeds: false,
+        isPreviousResident: false,
+        status: HousingRequestStatus.locked,
+        submittedAt: DateTime.now(),
+        decision: const AdmissionDecision(
+          status: AdmissionDecisionStatus.rejected,
+          decisionReason: 'عدم استيفاء الشروط',
+        ),
+      );
+      const governorates = [Governorate(id: 1, name: 'دمشق')];
+
+      final cubit = HousingRequestCubit(const _FakeHousingRequestRepository());
+      cubit.emit(HousingRequestSubmitted(rejected, governorates: governorates));
+
+      cubit.startNewRequestAfterRejection();
+
+      expect(cubit.state, isA<HousingRequestEmpty>());
+      final state = cubit.state as HousingRequestEmpty;
+      expect(state.governorates, governorates);
+    },
+  );
 }

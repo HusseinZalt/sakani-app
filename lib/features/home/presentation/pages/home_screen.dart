@@ -11,8 +11,10 @@ import '../../../../core/routing/app_router.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/widgets/custom_card.dart';
+import '../../../../core/widgets/housing_rejected_dialog.dart';
 import '../../../../core/widgets/profile_avatar.dart';
 import '../../../../core/widgets/refresh_on_tab_visible.dart';
+import '../../../housing_request/presentation/cubit/housing_request_reset_signal.dart';
 import '../../data/repositories/home_repository_impl.dart';
 import '../../domain/entities/home_dashboard.dart';
 import '../cubit/home_cubit.dart';
@@ -32,8 +34,34 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HomeView extends StatelessWidget {
+class _HomeView extends StatefulWidget {
   const _HomeView();
+
+  @override
+  State<_HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<_HomeView> {
+  // تُعرض نافذة "طلبك انرفض" مرة واحدة فقط لكل جلسة تطبيق (عند أول تحميل
+  // للوحة المعلومات) بدل تكرارها كل مرة يُعاد فيها جلب البيانات (سحب-
+  // للتحديث، العودة للتبويب...)، وإلا كانت ستظهر بإزعاج لحد ما يقدّم
+  // المستخدم طلباً جديداً فعلياً.
+  bool _rejectionAlertShown = false;
+
+  void _handleRejectedStatus(BuildContext context, HomeDashboard dashboard) {
+    if (_rejectionAlertShown || dashboard.housingStatus.status != 'rejected') {
+      return;
+    }
+    _rejectionAlertShown = true;
+    showHousingRejectedDialog(
+      context,
+      onCancel: () {},
+      onResubmit: () {
+        HousingRequestResetSignal.request();
+        context.goNamed(AppRoutes.housingRequest);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +80,12 @@ class _HomeView extends StatelessWidget {
       onVisible: () => context.read<HomeCubit>().fetchDashboard(),
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: BlocBuilder<HomeCubit, HomeState>(
+        body: BlocConsumer<HomeCubit, HomeState>(
+          listener: (context, state) {
+            if (state is HomeSuccess) {
+              _handleRejectedStatus(context, state.dashboard);
+            }
+          },
           builder: (context, state) {
             return switch (state) {
               HomeInitial() || HomeLoading() => const _HomeSkeleton(),

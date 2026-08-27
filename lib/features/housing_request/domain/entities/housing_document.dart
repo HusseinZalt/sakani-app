@@ -13,7 +13,11 @@ enum HousingDocumentType {
   departureReceipt(5, 'إيصال المغادرة', mandatory: false),
   residencyProof(6, 'سند الإقامة', mandatory: false);
 
-  const HousingDocumentType(this.apiValue, this.label, {required this.mandatory});
+  const HousingDocumentType(
+    this.apiValue,
+    this.label, {
+    required this.mandatory,
+  });
 
   final int apiValue;
   final String label;
