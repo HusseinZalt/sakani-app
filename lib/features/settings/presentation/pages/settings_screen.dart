@@ -48,24 +48,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// يرسل الخادم أي إشعار دفع لهذا المستخدم إطلاقاً، بغض النظر عن
   /// تفضيلات الفئات أدناه (المحفوظة محلياً فقط على هذا الجهاز). منفصل
   /// تماماً عن رمز الجهاز (FCM)، الذي يستمر تسجيله بشكل طبيعي دائماً.
+  ///
+  /// تحديث تفاؤلي فوري (المفتاح ينقلب فوراً عند الضغط) بدل انتظار رد
+  /// الخادم — خدمة المصادقة مستضافة على Vercel وقد تستغرق ثوانٍ عند
+  /// "cold start"، فانتظار الرد قبل أي انعكاس بصري كان يحس المفتاح بطيئاً
+  /// جداً رغم إنه فعلياً بيشتغل، بس بعد تأخير محسوس. نعيده لقيمته الأصلية
+  /// فقط لو فشل الطلب فعلياً.
   Future<void> _handleMasterToggle(bool value) async {
     if (_isUpdatingMasterToggle) return;
-    setState(() => _isUpdatingMasterToggle = true);
 
     final sessionCubit = context.read<UserSessionCubit>();
+    final previousUser = sessionCubit.state;
+    if (previousUser == null) return;
+
+    setState(() => _isUpdatingMasterToggle = true);
+    sessionCubit.setUser(previousUser.copyWith(notificationsEnabled: value));
+
     final result = await AuthRepositoryImpl().updateNotificationsEnabled(value);
 
     if (!mounted) return;
     setState(() => _isUpdatingMasterToggle = false);
 
-    if (result.isSuccess) {
-      final currentUser = sessionCubit.state;
-      if (currentUser != null) {
-        sessionCubit.setUser(
-          currentUser.copyWith(notificationsEnabled: result.dataOrNull),
-        );
-      }
-    } else {
+    if (result.isFailure) {
+      sessionCubit.setUser(previousUser);
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(result.failureOrNull!.message)));
