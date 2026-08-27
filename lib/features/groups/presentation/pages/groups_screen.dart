@@ -168,51 +168,58 @@ class _GroupsViewState extends State<_GroupsView> {
                       message: failure.message,
                       onRetry: cubit.fetchMyGroup,
                     ),
-                    GroupsSuccess(:final myGroup) => RefreshIndicator(
-                      onRefresh: cubit.fetchMyGroup,
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                        children: [
-                          if (myGroup != null) ...[
-                            _MyGroupCard(
-                              group: myGroup,
-                              myId: myId,
-                              onLeave: () => _handleLeaveGroup(cubit),
-                            ),
-                            if (myGroup.isLeader(myId)) ...[
-                              const SizedBox(height: 24),
-                              _PendingInvitationsSection(
-                                invitations:
-                                    myGroup.pendingInvitations
-                                        .where(
-                                          (i) =>
-                                              i.status ==
-                                              InvitationStatus.pending,
-                                        )
-                                        .toList(),
-                                onRespond:
-                                    (invitation, approve) => _handleRespond(
-                                      cubit,
-                                      invitation,
-                                      approve,
-                                    ),
+                    GroupsSuccess(:final myGroup, :final pendingJoinCode) =>
+                      RefreshIndicator(
+                        onRefresh: cubit.fetchMyGroup,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                          children: [
+                            if (myGroup != null) ...[
+                              _MyGroupCard(
+                                group: myGroup,
+                                myId: myId,
+                                onLeave: () => _handleLeaveGroup(cubit),
+                              ),
+                              if (myGroup.isLeader(myId)) ...[
+                                const SizedBox(height: 24),
+                                _PendingInvitationsSection(
+                                  invitations:
+                                      myGroup.pendingInvitations
+                                          .where(
+                                            (i) =>
+                                                i.status ==
+                                                InvitationStatus.pending,
+                                          )
+                                          .toList(),
+                                  onRespond:
+                                      (invitation, approve) => _handleRespond(
+                                        cubit,
+                                        invitation,
+                                        approve,
+                                      ),
+                                ),
+                              ],
+                            ] else if (pendingJoinCode != null) ...[
+                              _PendingJoinRequestCard(
+                                code: pendingJoinCode,
+                                onCancel:
+                                    () => cubit.cancelPendingJoinRequest(),
+                              ),
+                            ] else ...[
+                              _NoGroupCard(
+                                isLoading: _isCreatingGroup,
+                                onCreate: () => _handleCreateGroup(cubit),
+                              ),
+                              const SizedBox(height: 16),
+                              _JoinByCodeCard(
+                                controller: _joinCodeController,
+                                isLoading: _isJoiningGroup,
+                                onJoin: () => _handleJoinByCode(cubit),
                               ),
                             ],
-                          ] else ...[
-                            _NoGroupCard(
-                              isLoading: _isCreatingGroup,
-                              onCreate: () => _handleCreateGroup(cubit),
-                            ),
-                            const SizedBox(height: 16),
-                            _JoinByCodeCard(
-                              controller: _joinCodeController,
-                              isLoading: _isJoiningGroup,
-                              onJoin: () => _handleJoinByCode(cubit),
-                            ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
                   };
                 },
               ),
@@ -629,6 +636,57 @@ class _RoundIconButton extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(color: background, shape: BoxShape.circle),
         child: Icon(icon, size: 16, color: color),
+      ),
+    );
+  }
+}
+
+/// تُعرض بدل بطاقتَي الإنشاء/الانضمام بمجرّد إرسال طلب انضمام بكود، حتى
+/// يستجيب قائد الغروب — الطالب لا يقدر يرسل طلباً تانياً ولا ينشئ غروباً
+/// جديداً وهو بانتظار رد على طلب قائم أصلاً.
+class _PendingJoinRequestCard extends StatelessWidget {
+  const _PendingJoinRequestCard({required this.code, required this.onCancel});
+
+  final String code;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(strokeWidth: 2.4),
+          ),
+          const SizedBox(height: 14),
+          Text('بانتظار رد قائد الغروب', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            'أرسلت طلب انضمام بالكود "$code". بمجرد ما يوافق أو يرفض قائد الغروب، رح تنعكس هون تلقائياً.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () async {
+              final confirmed = await confirmAction(
+                context,
+                title: 'إلغاء الانتظار',
+                message:
+                    'رح تقدر ترسل طلب انضمام تاني أو تنشئ غروباً جديداً. طلبك الحالي بيضل موجود عند قائد الغروب لحد ما يستجيب له.',
+                confirmLabel: 'إلغاء الانتظار',
+              );
+              if (confirmed) onCancel();
+            },
+            child: const Text('لسا ما وصلك رد؟ ألغِ الانتظار'),
+          ),
+        ],
       ),
     );
   }

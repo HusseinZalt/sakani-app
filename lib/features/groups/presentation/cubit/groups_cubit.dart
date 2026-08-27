@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_result.dart';
+import '../../data/pending_join_request_storage.dart';
 import '../../domain/entities/student_group.dart';
 import '../../domain/repositories/groups_repository.dart';
 import 'groups_state.dart';
@@ -21,7 +22,15 @@ class GroupsCubit extends Cubit<GroupsState> {
 
     switch (result) {
       case ApiSuccess<StudentGroup?>(:final data):
-        emit(GroupsSuccess(data));
+        if (data != null) {
+          // صار عضواً فعلياً (سواء بموافقة قائد على طلبه، أو لأنه أنشأ
+          // غروباً بنفسه) — أي طلب انضمام معلَّق محلياً لم يعد ذا معنى.
+          await PendingJoinRequestStorage.clear();
+          emit(GroupsSuccess(data));
+          return;
+        }
+        final pendingCode = await PendingJoinRequestStorage.load();
+        emit(GroupsSuccess(data, pendingJoinCode: pendingCode));
       case ApiFailureResult<StudentGroup?>(:final failure):
         emit(GroupsFailure(failure));
     }
@@ -35,8 +44,24 @@ class GroupsCubit extends Cubit<GroupsState> {
 
   Future<ApiResult<void>> joinGroupByCode(String code) async {
     final result = await _repository.joinGroupByCode(code);
-    if (result.isSuccess) await fetchMyGroup();
+    if (result.isSuccess) {
+      // يُخزَّن قبل fetchMyGroup لأن الأخير هو من يقرأه لعرض حالة
+      // "بانتظار الرد" فوراً.
+      await PendingJoinRequestStorage.save(code);
+      await fetchMyGroup();
+    }
     return result;
+  }
+
+  /// يوقف عرض حالة "بانتظار الرد" محلياً — راجع التوثيق المفصَّل بـ
+  /// [PendingJoinRequestStorage] لحدود هذا الإجراء (لا يُلغي الطلب فعلياً
+  /// عند الخادم، لعدم وجود نقطة نهاية لذلك حالياً).
+  Future<void> cancelPendingJoinRequest() async {
+    await PendingJoinRequestStorage.clear();
+    final current = state;
+    if (current is GroupsSuccess) {
+      emit(GroupsSuccess(current.myGroup, pendingJoinCode: null));
+    }
   }
 
   Future<ApiResult<void>> respondToInvitation({

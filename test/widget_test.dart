@@ -34,7 +34,7 @@ import 'package:sakani/main.dart';
 class _FakeGroupsRepository implements GroupsRepository {
   _FakeGroupsRepository({this.group}) : fetchMyGroupCallCount = 0;
 
-  final StudentGroup? group;
+  StudentGroup? group;
   int fetchMyGroupCallCount;
 
   @override
@@ -271,6 +271,40 @@ void main() {
       expect(cubit.state, isA<GroupsSuccess>());
     },
   );
+
+  test('إرسال طلب انضمام يعرض حالة الانتظار، والإلغاء يوقفها محلياً', () async {
+    final repository = _FakeGroupsRepository();
+    final cubit = GroupsCubit(repository);
+
+    await cubit.joinGroupByCode('ABC123');
+    var state = cubit.state as GroupsSuccess;
+    expect(state.myGroup, isNull);
+    expect(state.pendingJoinCode, 'ABC123');
+
+    await cubit.cancelPendingJoinRequest();
+    state = cubit.state as GroupsSuccess;
+    expect(state.pendingJoinCode, isNull);
+  });
+
+  test('الانضمام الفعلي لغروب يمسح حالة الانتظار المحلية تلقائياً', () async {
+    final repository = _FakeGroupsRepository();
+    final cubit = GroupsCubit(repository);
+    await cubit.joinGroupByCode('ABC123');
+
+    repository.group = const StudentGroup(
+      id: 1,
+      code: 'GRP-001',
+      leaderId: 'other',
+      maxMembers: 4,
+      memberStudentIds: ['other', 'me'],
+      status: HousingGroupStatus.open,
+    );
+    await cubit.fetchMyGroup();
+
+    final state = cubit.state as GroupsSuccess;
+    expect(state.myGroup, isNotNull);
+    expect(state.pendingJoinCode, isNull);
+  });
 
   test('إذا فشل تعليم الإشعار كمقروء، تعود الحالة إلى ما كانت عليه', () async {
     final notification = AppNotification(
