@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/events/app_refresh_bus.dart';
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/maintenance_request.dart';
 import '../../domain/repositories/maintenance_repository.dart';
@@ -9,12 +12,21 @@ import 'maintenance_list_state.dart';
 /// معرفة ما إذا كانت البيانات وهمية حالياً أو قادمة من API حقيقي مستقبلاً.
 class MaintenanceListCubit extends Cubit<MaintenanceListState> {
   MaintenanceListCubit(this._repository)
-    : super(const MaintenanceListInitial());
+    : super(const MaintenanceListInitial()) {
+    // راجع توثيق [AppRefreshBus] — إشعار صيانة حي والمستخدم واقف على هذه
+    // الشاشة يحدّثها فوراً بدل بقائها بحالة قديمة.
+    _refreshSubscription = AppRefreshBus.stream
+        .where((topic) => topic == RefreshTopic.maintenance)
+        .listen((_) => fetchRequests());
+  }
 
   final MaintenanceRepository _repository;
+  StreamSubscription<RefreshTopic>? _refreshSubscription;
 
+  /// عند استدعاء متكرر (تحديث حي أو سحب للتحديث) وسبق أن ظهرت بيانات
+  /// ناجحة، لا نُظهر شاشة تحميل كاملة من جديد.
   Future<void> fetchRequests() async {
-    emit(const MaintenanceListLoading());
+    if (state is! MaintenanceListSuccess) emit(const MaintenanceListLoading());
 
     final result = await _repository.fetchRequests();
 
@@ -48,5 +60,11 @@ class MaintenanceListCubit extends Cubit<MaintenanceListState> {
     }
 
     return result;
+  }
+
+  @override
+  Future<void> close() {
+    _refreshSubscription?.cancel();
+    return super.close();
   }
 }

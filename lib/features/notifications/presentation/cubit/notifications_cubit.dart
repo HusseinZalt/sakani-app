@@ -1,17 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/events/app_refresh_bus.dart';
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/app_notification.dart';
 import '../../domain/repositories/notifications_repository.dart';
 import 'notifications_state.dart';
 
 class NotificationsCubit extends Cubit<NotificationsState> {
-  NotificationsCubit(this._repository) : super(const NotificationsInitial());
+  NotificationsCubit(this._repository) : super(const NotificationsInitial()) {
+    // يجلب فوراً عند وصول إشعار حي والمستخدم أصلاً واقف على هذا التبويب
+    // (راجع توثيق [AppRefreshBus]) — بدون هذا، إشعار وصل والمستخدم على
+    // نفس شاشة الإشعارات لن يظهر إلا بسحب يدوي للتحديث.
+    _refreshSubscription = AppRefreshBus.stream
+        .where((topic) => topic == RefreshTopic.notifications)
+        .listen((_) => fetchNotifications());
+  }
 
   final NotificationsRepository _repository;
+  StreamSubscription<RefreshTopic>? _refreshSubscription;
 
+  /// عند استدعاء متكرر (تحديث حي أو سحب للتحديث) وسبق أن ظهرت بيانات
+  /// ناجحة، لا نُظهر شاشة تحميل كاملة من جديد — نُبقي المحتوى الحالي
+  /// ونستبدله بهدوء فقط عند وصول النتيجة الجديدة.
   Future<void> fetchNotifications() async {
-    emit(const NotificationsLoading());
+    if (state is! NotificationsSuccess) emit(const NotificationsLoading());
 
     final result = await _repository.fetchNotifications();
 
@@ -21,6 +35,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       case ApiFailureResult<List<AppNotification>>(:final failure):
         emit(NotificationsFailure(failure));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _refreshSubscription?.cancel();
+    return super.close();
   }
 
   /// تعليم إشعار كمقروء (تحديث تفاؤلي فوري للحالة المحلية، دون انتظار

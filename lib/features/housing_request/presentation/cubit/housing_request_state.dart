@@ -21,12 +21,19 @@ final class HousingRequestEmpty extends HousingRequestState {
   const HousingRequestEmpty({
     required this.governorates,
     this.buildings = const [],
+    this.buildingsLoadFailed = false,
   });
 
   final List<Governorate> governorates;
 
   /// لملء اختيار "المبنى السابق" بقسم "سكنت سابقاً".
   final List<Building> buildings;
+
+  /// true فقط إذا فشل نداء الأبنية فعلياً (شبكة/خادم) — يميّز عن حالة
+  /// كون القائمة فارغة شرعياً (لا مبانٍ مسجَّلة)، حتى تعرض الواجهة زر
+  /// "إعادة المحاولة" بدل رسالة خطأ عامة لا فائدة منها لو كانت القائمة
+  /// فارغة فعلاً وليس بسبب عطل.
+  final bool buildingsLoadFailed;
 }
 
 /// جارٍ إرسال/تعديل الطلب.
@@ -40,6 +47,7 @@ final class HousingRequestSubmitted extends HousingRequestState {
     this.request, {
     this.governorates = const [],
     this.buildings = const [],
+    this.buildingsLoadFailed = false,
   });
 
   final HousingRequest request;
@@ -47,6 +55,9 @@ final class HousingRequestSubmitted extends HousingRequestState {
   /// لازمة فقط لإعادة عرض نموذج التعديل عند حالة `NeedsRevision`.
   final List<Governorate> governorates;
   final List<Building> buildings;
+
+  /// راجع توثيق [HousingRequestEmpty.buildingsLoadFailed].
+  final bool buildingsLoadFailed;
 }
 
 final class HousingRequestFailure extends HousingRequestState {

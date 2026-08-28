@@ -3,6 +3,11 @@ import 'package:flutter/foundation.dart';
 
 import '../session/session_storage.dart';
 
+/// سبب فشل آخر محاولة تجديد جلسة — يُستخدم لتمييز فشل التجديد بسبب
+/// مشكلة اتصال مؤقتة (لا تعني انتهاء الجلسة فعلياً) عن فشل حقيقي
+/// (رمز التجديد نفسه غير صالح/منتهٍ)، راجع توثيق `onError` بـ [ApiClient].
+enum _RefreshFailureReason { network, unauthorized }
+
 /// عميل HTTP موحّد لطلبات أي من خدمات الباك إند الحقيقية (Microservices)،
 /// مبني فوق Dio.
 ///
@@ -65,6 +70,22 @@ class ApiClient {
               } catch (_) {
                 // تابع لمسار الفشل الأصلي إن فشلت إعادة المحاولة أيضاً.
               }
+            } else if (_lastRefreshFailureReason == _RefreshFailureReason.network) {
+              // فشل التجديد بسبب مشكلة اتصال مؤقتة (لا يوجد إنترنت مثلاً)،
+              // وليس لأن الجلسة انتهت فعلياً — الخطأ الأصلي هنا 401 عادي
+              // سيُترجَم لاحقاً برسالة "يرجى تسجيل الدخول مرة أخرى" رغم أن
+              // رمز التجديد لا يزال صالحاً تماماً، وهو ما كان يدفع
+              // المستخدم لتسجيل خروج/دخول غير ضروري كل مرة ينقطع فيها
+              // اتصاله للحظة وقت انتهاء عمر رمز الدخول (كل 15 دقيقة).
+              // نستبدله بخطأ اتصال حتى تظهر رسالة صحيحة تدفعه للمحاولة
+              // لاحقاً بدل إعادة تسجيل الدخول.
+              return handler.reject(
+                DioException(
+                  requestOptions: error.requestOptions,
+                  type: DioExceptionType.connectionError,
+                  error: error.error,
+                ),
+              );
             }
           }
           handler.next(error);
@@ -136,6 +157,10 @@ class ApiClient {
   /// شرح [ApiClient] أعلاه).
   static Future<bool>? _refreshFuture;
 
+  /// سبب فشل آخر محاولة تجديد (فقط ذو معنى مباشرة بعد `await
+  /// _tryRefreshToken()` عائدة بـ false) — راجع [_RefreshFailureReason].
+  static _RefreshFailureReason? _lastRefreshFailureReason;
+
   Future<bool> _tryRefreshToken() {
     return _refreshFuture ??= _performRefresh().whenComplete(() {
       _refreshFuture = null;
@@ -144,7 +169,10 @@ class ApiClient {
 
   Future<bool> _performRefresh() async {
     final refreshToken = await SessionStorage.loadRefreshToken();
-    if (refreshToken == null) return false;
+    if (refreshToken == null) {
+      _lastRefreshFailureReason = _RefreshFailureReason.unauthorized;
+      return false;
+    }
 
     try {
       final response = await Dio(
@@ -154,14 +182,29 @@ class ApiClient {
         data: {'refreshToken': refreshToken},
       );
       final data = response.data?['data'] as Map<String, dynamic>?;
-      if (data == null) return false;
+      if (data == null) {
+        _lastRefreshFailureReason = _RefreshFailureReason.unauthorized;
+        return false;
+      }
 
       await SessionStorage.saveTokens(
         accessToken: data['accessToken'] as String,
         refreshToken: data['refreshToken'] as String,
       );
       return true;
+    } on DioException catch (e) {
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.connectionError:
+          _lastRefreshFailureReason = _RefreshFailureReason.network;
+        default:
+          _lastRefreshFailureReason = _RefreshFailureReason.unauthorized;
+      }
+      return false;
     } catch (_) {
+      _lastRefreshFailureReason = _RefreshFailureReason.unauthorized;
       return false;
     }
   }

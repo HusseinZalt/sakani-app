@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/events/app_refresh_bus.dart';
 import '../../../../core/network/api_result.dart';
 import '../../data/pending_join_request_storage.dart';
 import '../../domain/entities/student_group.dart';
@@ -8,9 +11,17 @@ import 'groups_state.dart';
 
 /// يدير حالة شاشة الغروبات عبر [GroupsRepository].
 class GroupsCubit extends Cubit<GroupsState> {
-  GroupsCubit(this._repository) : super(const GroupsInitial());
+  GroupsCubit(this._repository) : super(const GroupsInitial()) {
+    // راجع توثيق [AppRefreshBus] — إشعار غروب حي (انضمام/رفض/إزالة عضو...)
+    // بينما المستخدم واقف على هذا التبويب يحدّثه فوراً بدل بقائه بحالة
+    // قديمة حتى تبديل تبويب أو سحب يدوي.
+    _refreshSubscription = AppRefreshBus.stream
+        .where((topic) => topic == RefreshTopic.groups)
+        .listen((_) => fetchMyGroup());
+  }
 
   final GroupsRepository _repository;
+  StreamSubscription<RefreshTopic>? _refreshSubscription;
 
   /// عند استدعاء متكرر (مثلاً عند العودة للتبويب) وسبق أن ظهرت بيانات
   /// ناجحة، لا نُظهر شاشة تحميل كاملة من جديد — نُبقي المحتوى الحالي
@@ -86,5 +97,11 @@ class GroupsCubit extends Cubit<GroupsState> {
     final result = await _repository.removeMember(studentId);
     if (result.isSuccess) await fetchMyGroup();
     return result;
+  }
+
+  @override
+  Future<void> close() {
+    _refreshSubscription?.cancel();
+    return super.close();
   }
 }

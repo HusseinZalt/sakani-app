@@ -10,6 +10,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../features/housing_request/data/repositories/housing_request_repository_impl.dart';
 import '../../features/housing_request/domain/entities/housing_request.dart';
 import '../../features/housing_request/presentation/cubit/housing_request_reset_signal.dart';
+import '../events/app_refresh_bus.dart';
 import '../network/api_result.dart';
 import '../routing/app_router.dart';
 import '../widgets/housing_rejected_dialog.dart';
@@ -147,6 +148,29 @@ class PushNotificationService {
     final context = AppRouter.rootNavigatorKey.currentContext;
     if (context != null && context.mounted) {
       context.read<NotificationsBadgeCubit>().increment();
+    }
+
+    // يطلب من أي شاشة معنية حيّة بالذاكرة تحديث نفسها فوراً — راجع توثيق
+    // [AppRefreshBus] لسبب الحاجة لهذا بالتحديد (وصول إشعار حي والمستخدم
+    // أصلاً واقف على نفس الشاشة، حيث لا ينفع الاعتماد وحده على تحديث
+    // العودة لتبويب). أي إشعار مهما كان نوعه يظهر أولاً كسجل بصندوق
+    // الوارد، فتُحدَّث قائمة الإشعارات دائماً، إضافة لموضوع أكثر تحديداً
+    // إن وُجد.
+    AppRefreshBus.emit(RefreshTopic.notifications);
+    switch (type) {
+      case 'housing':
+        AppRefreshBus.emit(RefreshTopic.housingRequest);
+      case 'maintenance':
+        AppRefreshBus.emit(RefreshTopic.maintenance);
+      case 'complaint':
+        AppRefreshBus.emit(RefreshTopic.complaints);
+      default:
+        // كل أنواع الغروب (`group`, `group_join_request`,
+        // `group_member_removed`...) تبدأ بنفس البادئة — راجع
+        // `app_notification_model.dart` لقائمة الأنواع المؤكَّدة فعلياً.
+        if (type != null && type.startsWith('group')) {
+          AppRefreshBus.emit(RefreshTopic.groups);
+        }
     }
 
     // إشعارات "housing" عامة (قيد المراجعة/قرار...)، فنتحقق من الحالة

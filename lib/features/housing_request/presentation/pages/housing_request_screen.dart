@@ -126,10 +126,12 @@ class _HousingRequestView extends StatelessWidget {
                     HousingRequestEmpty(
                       :final governorates,
                       :final buildings,
+                      :final buildingsLoadFailed,
                     ) =>
                       _RequestFormView(
                         governorates: governorates,
                         buildings: buildings,
+                        buildingsLoadFailed: buildingsLoadFailed,
                       ),
                     HousingRequestSubmitting() => const Center(
                       child: CircularProgressIndicator(),
@@ -138,11 +140,13 @@ class _HousingRequestView extends StatelessWidget {
                       :final request,
                       :final governorates,
                       :final buildings,
+                      :final buildingsLoadFailed,
                     ) =>
                       request.status == HousingRequestStatus.needsRevision
                           ? _RequestFormView(
                             governorates: governorates,
                             buildings: buildings,
+                            buildingsLoadFailed: buildingsLoadFailed,
                             existingRequest: request,
                           )
                           : _StatusView(request: request),
@@ -198,11 +202,15 @@ class _RequestFormView extends StatefulWidget {
   const _RequestFormView({
     required this.governorates,
     required this.buildings,
+    this.buildingsLoadFailed = false,
     this.existingRequest,
   });
 
   final List<Governorate> governorates;
   final List<Building> buildings;
+
+  /// راجع توثيق [HousingRequestEmpty.buildingsLoadFailed].
+  final bool buildingsLoadFailed;
   final HousingRequest? existingRequest;
 
   @override
@@ -605,11 +613,32 @@ class _RequestFormViewState extends State<_RequestFormView> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  if (widget.buildings.isEmpty)
+                  if (widget.buildings.isEmpty && widget.buildingsLoadFailed)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'تعذّر تحميل قائمة الأبنية.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed:
+                              () =>
+                                  context
+                                      .read<HousingRequestCubit>()
+                                      .retryLoadBuildings(),
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    )
+                  else if (widget.buildings.isEmpty)
                     Text(
-                      'تعذّر تحميل قائمة الأبنية، حاول لاحقاً.',
+                      'لا توجد مبانٍ مسجَّلة حالياً.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.error,
+                        color: AppColors.textSecondary,
                       ),
                     )
                   else

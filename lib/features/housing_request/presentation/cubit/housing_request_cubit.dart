@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/events/app_refresh_bus.dart';
 import '../../../../core/network/api_result.dart';
 import '../../domain/entities/building.dart';
 import '../../domain/entities/dorm_room.dart';
@@ -16,9 +19,17 @@ import 'housing_request_state.dart';
 /// فلا معنى لعرض نموذج تقديم أصلاً (`HousingRequestCycleClosed`)، بغض
 /// النظر إن كان للطالب طلب قديم أو لا.
 class HousingRequestCubit extends Cubit<HousingRequestState> {
-  HousingRequestCubit(this._repository) : super(const HousingRequestLoading());
+  HousingRequestCubit(this._repository)
+    : super(const HousingRequestLoading()) {
+    // راجع توثيق [AppRefreshBus] — إشعار قرار سكن حي بينما المستخدم واقف
+    // على هذا التبويب يحدّثه فوراً بدل بقائه على "قيد المراجعة" القديمة.
+    _refreshSubscription = AppRefreshBus.stream
+        .where((topic) => topic == RefreshTopic.housingRequest)
+        .listen((_) => fetchMyRequest());
+  }
 
   final HousingRequestRepository _repository;
+  StreamSubscription<RefreshTopic>? _refreshSubscription;
 
   /// عند استدعاء متكرر (مثلاً عند العودة للتبويب) وسبق أن ظهرت بيانات
   /// محدَّدة، لا نُظهر شاشة تحميل كاملة من جديد — نُبقي المحتوى الحالي
@@ -64,18 +75,24 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
           ApiSuccess<List<Building>>(:final data) => data,
           ApiFailureResult<List<Building>>() => const <Building>[],
         };
+        final buildingsLoadFailed = buildingsResult is ApiFailureResult;
         if (data != null) {
           emit(
             HousingRequestSubmitted(
               data,
               governorates: governorates,
               buildings: buildings,
+              buildingsLoadFailed: buildingsLoadFailed,
             ),
           );
           return;
         }
         emit(
-          HousingRequestEmpty(governorates: governorates, buildings: buildings),
+          HousingRequestEmpty(
+            governorates: governorates,
+            buildings: buildings,
+            buildingsLoadFailed: buildingsLoadFailed,
+          ),
         );
       case ApiFailureResult<HousingRequest?>(:final failure):
         emit(HousingRequestFailure(failure));
@@ -105,6 +122,42 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
       );
     }
     return result;
+  }
+
+  /// يعيد جلب قائمة الأبنية فقط دون إعادة تحميل الشاشة كاملة — تُستدعى من
+  /// زر "إعادة المحاولة" الذي يظهر فقط عند فشل النداء فعلياً (راجع
+  /// [HousingRequestEmpty.buildingsLoadFailed]).
+  Future<void> retryLoadBuildings() async {
+    final current = state;
+    final buildingsResult = await _repository.fetchBuildings();
+    final buildingsLoadFailed = buildingsResult is ApiFailureResult;
+    final buildings = switch (buildingsResult) {
+      ApiSuccess<List<Building>>(:final data) => data,
+      ApiFailureResult<List<Building>>() => const <Building>[],
+    };
+
+    switch (current) {
+      case HousingRequestEmpty(:final governorates):
+        emit(
+          HousingRequestEmpty(
+            governorates: governorates,
+            buildings: buildings,
+            buildingsLoadFailed: buildingsLoadFailed,
+          ),
+        );
+      case HousingRequestSubmitted(:final request, :final governorates):
+        emit(
+          HousingRequestSubmitted(
+            request,
+            governorates: governorates,
+            buildings: buildings,
+            buildingsLoadFailed: buildingsLoadFailed,
+          ),
+        );
+      default:
+        // حالات أخرى (تحميل/إرسال/فشل عام) لا معنى لتحديث الأبنية فيها.
+        break;
+    }
   }
 
   /// غرف مبنى واحد، لملء اختيار "رقم الغرفة" بعد اختيار المبنى والطابق —
@@ -189,5 +242,11 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
       case ApiFailureResult<HousingRequest>(:final failure):
         emit(HousingRequestFailure(failure));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _refreshSubscription?.cancel();
+    return super.close();
   }
 }
