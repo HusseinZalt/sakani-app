@@ -224,6 +224,11 @@ class _RequestFormViewState extends State<_RequestFormView> {
   // احتياطي فقط: يُستخدم لإدخال رقم الغرفة يدوياً حين يتعذّر جلب غرف
   // المبنى الفعلية (فشل الطلب، أو لم تُسجَّل غرف لهذا الطابق بعد).
   final _previousRoomFallbackController = TextEditingController();
+  // احتياطي فقط: `GET /api/buildings/lookup` (المستخدم فعلياً لهذه
+  // القائمة — راجع توثيق `fetchBuildings` بمصدر البيانات) لا يرجع
+  // `floorsCount` إطلاقاً، فلا طريقة لعرض طوابق كخيارات جاهزة لأي مبنى
+  // — إدخال يدوي دائماً بدل قسم طابق معطَّل بلا أي إجراء ممكن.
+  final _previousFloorFallbackController = TextEditingController();
 
   int? _governorateId;
   int _academicLevel = 1;
@@ -259,6 +264,8 @@ class _RequestFormViewState extends State<_RequestFormView> {
       _previousFloor = existing.previousFloor;
       _previousRoomNumber = existing.previousRoomNumber;
       _previousRoomFallbackController.text = existing.previousRoomNumber ?? '';
+      _previousFloorFallbackController.text =
+          existing.previousFloor?.toString() ?? '';
       if (_previousBuildingId != null) _loadRoomsForBuilding();
       for (final doc in existing.documents) {
         _documents[doc.type] = doc;
@@ -280,6 +287,7 @@ class _RequestFormViewState extends State<_RequestFormView> {
     _addressController.dispose();
     _notesController.dispose();
     _previousRoomFallbackController.dispose();
+    _previousFloorFallbackController.dispose();
     super.dispose();
   }
 
@@ -657,6 +665,7 @@ class _RequestFormViewState extends State<_RequestFormView> {
                                   _previousFloor = null;
                                   _previousRoomNumber = null;
                                   _previousRoomFallbackController.clear();
+                                  _previousFloorFallbackController.clear();
                                   _roomsForSelectedBuilding = [];
                                 });
                                 _loadRoomsForBuilding();
@@ -675,11 +684,18 @@ class _RequestFormViewState extends State<_RequestFormView> {
                     const SizedBox(height: 10),
                     if (_selectedBuilding?.floorsCount == null ||
                         _selectedBuilding!.floorsCount! <= 0)
-                      Text(
-                        'لم يُسجَّل عدد الطوابق لهذا المبنى بعد.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      CustomTextField(
+                        controller: _previousFloorFallbackController,
+                        label: 'رقم الطابق',
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          final parsed = int.tryParse(value.trim());
+                          setState(() {
+                            _previousFloor = parsed;
+                            _previousRoomNumber = null;
+                            _previousRoomFallbackController.clear();
+                          });
+                        },
                       )
                     else
                       Wrap(

@@ -75,9 +75,18 @@ class HousingRequestRemoteDataSource {
 
   /// قائمة الأبنية السكنية — لملء اختيار "المبنى السابق" بقسم "سكنت
   /// سابقاً"، بنفس نمط [fetchGovernorates].
+  ///
+  /// **مؤكَّد بالاختبار الفعلي (2026-08-28):** `GET /api/buildings` (قائمة
+  /// الإدارة الكاملة) ترجع 403 لأي حساب طالب — مقصورة فعلياً على
+  /// admin/super_admin رغم أن توثيق Swagger لا يُظهر أي قيد صلاحيات
+  /// عليها. نقطة `GET /api/buildings/lookup` هي المخصَّصة صراحة لهذا
+  /// الاستخدام (ترجع 200 لأي حساب مصادَق)، لكنها ترجع `BuildingLookupDto`
+  /// المبسَّط (`id`, `name` فقط، بلا `floorsCount`) — الواجهة تتعامل مع
+  /// غياب `floorsCount` أصلاً بإدخال يدوي احتياطي (راجع
+  /// `housing_request_screen.dart`).
   Future<List<BuildingModel>> fetchBuildings() async {
     try {
-      final response = await _dio.get<dynamic>('/api/buildings');
+      final response = await _dio.get<dynamic>('/api/buildings/lookup');
       final items = _asJsonList(response.data);
       return items
           .whereType<Map<String, dynamic>>()
