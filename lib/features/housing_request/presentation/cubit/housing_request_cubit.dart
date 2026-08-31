@@ -168,6 +168,14 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
     return _repository.fetchRoomsForBuilding(buildingId);
   }
 
+  /// دفع رسوم طلب سكن مقبول من رصيد المحفظة. لا تُغيّر [state] الرئيسية —
+  /// الشاشة تستدعيها مباشرة وتدير مؤشر التحميل محلياً (بنفس نمط
+  /// [fetchRoomsForBuilding]/إلغاء طلب الصيانة)، ثم تعيد جلب الطلب بعد
+  /// النجاح عبر [fetchMyRequest] حتى تنعكس أي حقول محدَّثة من الخادم.
+  Future<ApiResult<double?>> payForRequest(int requestId) {
+    return _repository.payForRequest(requestId);
+  }
+
   Future<void> submitRequest({
     required int gender,
     required int governorateId,

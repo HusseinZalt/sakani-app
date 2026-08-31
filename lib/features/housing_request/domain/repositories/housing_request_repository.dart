@@ -58,4 +58,11 @@ abstract class HousingRequestRepository {
   /// حذف طلب سكن — الطالب يحذف طلبه هو فقط. يُرفض إن كان الطالب مُسكّناً
   /// فعلياً (لازم إخلاء المبنى أولاً من جهة الإدارة).
   Future<ApiResult<void>> deleteRequest(int requestId);
+
+  /// دفع رسوم طلب سكن مقبول من رصيد محفظة الطالب (`POST
+  /// /api/housing-requests/{id}/pay`) — راجع تحفظات التوثيق بـ
+  /// [HousingRequestRemoteDataSource.payForRequest]. تُرجع الرصيد الجديد
+  /// إن أرجعه الخادم ضمن الاستجابة، أو null إن لم يُرجعه (لا يعني فشل
+  /// العملية، فقط عدم توفر رصيد محدَّث لعرضه فوراً).
+  Future<ApiResult<double?>> payForRequest(int requestId);
 }

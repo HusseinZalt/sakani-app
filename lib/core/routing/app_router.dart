@@ -27,6 +27,8 @@ import '../../features/settings/presentation/pages/privacy_policy_screen.dart';
 import '../../features/settings/presentation/pages/settings_screen.dart';
 import '../../features/settings/presentation/pages/support_screen.dart';
 import '../../features/splash/presentation/pages/splash_screen.dart';
+import '../../features/wallet/presentation/pages/qr_scan_screen.dart';
+import '../../features/wallet/presentation/pages/wallet_screen.dart';
 
 /// أسماء ومسارات جميع شاشات التطبيق في مكان واحد، لتفادي كتابة السلاسل
 /// النصية (Strings) يدوياً عبر الكود والتقليل من الأخطاء الإملائية.
@@ -60,6 +62,8 @@ class AppRoutes {
   static const privacyPolicy = 'privacyPolicy';
   static const documents = 'documents';
   static const support = 'support';
+  static const wallet = 'wallet';
+  static const walletScan = 'walletScan';
 
   static const splashPath = '/splash';
   static const loginPath = '/login';
@@ -86,6 +90,8 @@ class AppRoutes {
   static const privacyPolicyPath = '/privacy-policy';
   static const documentsPath = '/documents';
   static const supportPath = '/support';
+  static const walletPath = '/wallet';
+  static const walletScanPath = 'scan';
 }
 
 /// إعداد التنقل الموحّد للتطبيق باستخدام GoRouter.
@@ -210,6 +216,20 @@ class AppRouter {
                           ? state.extra as Complaint
                           : null,
                 ),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.walletPath,
+        name: AppRoutes.wallet,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const WalletScreen(),
+        routes: [
+          GoRoute(
+            path: AppRoutes.walletScanPath,
+            name: AppRoutes.walletScan,
+            parentNavigatorKey: rootNavigatorKey,
+            builder: (context, state) => const QrScanScreen(),
           ),
         ],
       ),

@@ -959,14 +959,68 @@ class _DocumentSlot extends StatelessWidget {
   }
 }
 
-class _StatusView extends StatelessWidget {
+class _StatusView extends StatefulWidget {
   const _StatusView({required this.request});
 
   final HousingRequest request;
 
   @override
+  State<_StatusView> createState() => _StatusViewState();
+}
+
+class _StatusViewState extends State<_StatusView> {
+  bool _isPaying = false;
+
+  /// لا يوجد حالياً أي حقل من الخادم يوضّح إن كان الطلب مدفوعاً بالفعل
+  /// (`HousingRequestDto` لا يحمل مثل هذا الحقل بعد) — نتتبّع نجاح الدفع
+  /// محلياً فقط طوال عمر هذه الشاشة (يختفي زر "ادفع" بعدها مباشرة)، لكن
+  /// هذا لا يُبقيه مخفياً بعد إغلاق التطبيق وإعادة فتحه أو حتى بعد الخروج
+  /// والعودة لهذا التبويب من جديد. **يلزم حقل حقيقي من الباك إند
+  /// (مثال: `isPaid` على الطلب أو التخصيص) لعرض حالة الدفع بشكل صحيح
+  /// ودائم.**
+  bool _paidLocally = false;
+
+  Future<void> _handlePay(BuildContext context, int requestId) async {
+    if (_isPaying) return;
+    setState(() => _isPaying = true);
+
+    final result = await context.read<HousingRequestCubit>().payForRequest(
+      requestId,
+    );
+
+    if (!context.mounted) return;
+    setState(() => _isPaying = false);
+
+    if (result.isSuccess) {
+      setState(() => _paidLocally = true);
+
+      final newBalance = result.dataOrNull;
+      if (newBalance != null) {
+        final sessionCubit = context.read<UserSessionCubit>();
+        final user = sessionCubit.state;
+        if (user != null) {
+          sessionCubit.setUser(user.copyWith(balance: newBalance));
+        }
+      }
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            result.isSuccess
+                ? 'تم دفع رسوم السكن بنجاح.'
+                : result.failureOrNull!.message,
+          ),
+        ),
+      );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final request = widget.request;
     final decision = request.decision;
 
     return SingleChildScrollView(
@@ -1075,6 +1129,68 @@ class _StatusView extends StatelessWidget {
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+          ],
+          if (decision?.status == AdmissionDecisionStatus.accepted) ...[
+            const SizedBox(height: 16),
+            CustomCard(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: AppColors.primaryDark,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'رسوم السكن',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _paidLocally
+                        ? 'تم دفع رسوم السكن بنجاح من رصيد محفظتك.'
+                        : 'ادفع رسوم السكن من رصيد محفظتك مباشرة داخل التطبيق.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_paidLocally)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'مدفوع',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    CustomButton(
+                      label: 'ادفع رسوم السكن الآن',
+                      icon: Icons.payments_outlined,
+                      isLoading: _isPaying,
+                      onPressed: () => _handlePay(context, request.id),
+                    ),
                 ],
               ),
             ),

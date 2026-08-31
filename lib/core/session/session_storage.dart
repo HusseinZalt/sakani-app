@@ -34,6 +34,9 @@ class SessionStorage {
         'isVerified': user.isVerified,
         'gender': user.gender,
         'notificationsEnabled': user.notificationsEnabled,
+        'role': user.role,
+        'verificationStatus': user.verificationStatus,
+        'balance': user.balance,
       }),
     );
   }
@@ -59,6 +62,9 @@ class SessionStorage {
         isVerified: json['isVerified'] as bool? ?? true,
         gender: json['gender'] as String?,
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
+        role: json['role'] as String?,
+        verificationStatus: json['verificationStatus'] as String?,
+        balance: (json['balance'] as num?)?.toDouble() ?? 0,
       );
     } catch (_) {
       return null;

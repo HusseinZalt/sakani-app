@@ -232,6 +232,58 @@ class HousingRequestRemoteDataSource {
     }
   }
 
+  /// دفع رسوم طلب سكن مقبول من رصيد محفظة الطالب.
+  ///
+  /// ⚠️ **بخلاف بقية نقاط هذا الملف، شكل استجابة/أخطاء هذه النقطة تحديداً
+  /// غير مؤكَّد باختبار فعلي** (لا توثيق Swagger متاح وقت الكتابة) — مبنية
+  /// على افتراضات معقولة قياساً على بقية الـ API (وعلى شكل رد الشحن
+  /// المكافئ بالمحفظة `POST /api/wallet/redeem`، راجع
+  /// `wallet_remote_data_source.dart`): نجاح بلا جسم أو بجسم فيه
+  /// `data.balance` اختيارياً (الرصيد الجديد بعد الخصم)، و404/409/402
+  /// للحالات الشائعة (الطلب غير موجود/مدفوع سابقاً/الرصيد غير كافٍ). عند
+  /// أول اختبار فعلي يجب تحديث هذا التوثيق والتعامل مع أي فرق في الشكل.
+  Future<double?> payForRequest(int requestId) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/housing-requests/$requestId/pay',
+      );
+      final body = _tryAsJsonMap(response.data);
+      final data = body?['data'] as Map<String, dynamic>?;
+      return (data?['balance'] as num?)?.toDouble();
+    } on DioException catch (e) {
+      throw _mapPayException(e);
+    }
+  }
+
+  HousingRequestException _mapPayException(DioException e) {
+    switch (e.response?.statusCode) {
+      case 400:
+        final message = _extract400Message(e.response?.data);
+        final lower = message.toLowerCase();
+        if (lower.contains('balance') ||
+            lower.contains('insufficient') ||
+            message.contains('رصيد')) {
+          return const HousingRequestException(
+            'رصيدك في المحفظة غير كافٍ لدفع رسوم السكن، يرجى شحن رصيدك أولاً.',
+          );
+        }
+        return HousingRequestException(message);
+      case 402:
+        return const HousingRequestException(
+          'رصيدك في المحفظة غير كافٍ لدفع رسوم السكن، يرجى شحن رصيدك أولاً.',
+        );
+      case 404:
+        return const HousingRequestException(
+          'لم يتم العثور على طلب السكن.',
+          type: ApiErrorType.notFound,
+        );
+      case 409:
+        return const HousingRequestException('تم دفع رسوم هذا الطلب مسبقاً.');
+      default:
+        return _mapDioException(e);
+    }
+  }
+
   FormData _buildFormData({
     required int gender,
     required int governorateId,

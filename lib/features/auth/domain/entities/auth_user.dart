@@ -27,6 +27,7 @@ class AuthUser extends Equatable {
     this.verificationStatus,
     this.gender,
     this.notificationsEnabled = true,
+    this.balance = 0,
   });
 
   final String id;
@@ -60,6 +61,12 @@ class AuthUser extends Equatable {
   /// الجهاز (FCM)، الذي يستمر تسجيله بشكل طبيعي بغض النظر عن هذه القيمة.
   final bool notificationsEnabled;
 
+  /// رصيد المحفظة الحالي (خدمة المصادقة، راجع `wallet_repository.dart`) —
+  /// يصل جاهزاً ضمن استجابات تسجيل الدخول/بيانات المستخدم دون الحاجة لأي
+  /// نداء API منفصل لعرضه، ويُحدَّث محلياً فقط بعد نجاح شحن رصيد جديد
+  /// (راجع [WalletRedeemCubit]) دون إعادة تسجيل الدخول.
+  final double balance;
+
   /// نسخة معدّلة من المستخدم، تُستخدم عند حفظ تعديلات الملف الشخصي.
   AuthUser copyWith({
     String? fullName,
@@ -76,6 +83,7 @@ class AuthUser extends Equatable {
     String? verificationStatus,
     String? gender,
     bool? notificationsEnabled,
+    double? balance,
   }) {
     return AuthUser(
       id: id,
@@ -93,6 +101,7 @@ class AuthUser extends Equatable {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       gender: gender ?? this.gender,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      balance: balance ?? this.balance,
     );
   }
 
@@ -113,5 +122,6 @@ class AuthUser extends Equatable {
     role,
     notificationsEnabled,
     verificationStatus,
+    balance,
   ];
 }

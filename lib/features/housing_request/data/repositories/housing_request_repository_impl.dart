@@ -162,4 +162,16 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
       return ApiResult.failure(ApiFailure.unknown());
     }
   }
+
+  @override
+  Future<ApiResult<double?>> payForRequest(int requestId) async {
+    try {
+      final balance = await _remoteDataSource.payForRequest(requestId);
+      return ApiResult.success(balance);
+    } on HousingRequestException catch (e) {
+      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+    } catch (_) {
+      return ApiResult.failure(ApiFailure.unknown());
+    }
+  }
 }

@@ -115,6 +115,55 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         CustomCard(
+                          onTap: () => context.pushNamed(AppRoutes.wallet),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySubtle,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  color: AppColors.primaryDark,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'رصيد المحفظة',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: AppColors.textHint,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      user.balance == user.balance.truncateToDouble()
+                                          ? user.balance.toStringAsFixed(0)
+                                          : user.balance.toStringAsFixed(2),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.w800),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_left,
+                                color: AppColors.textHint,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        CustomCard(
                           padding: EdgeInsets.zero,
                           child: Column(
                             children: [

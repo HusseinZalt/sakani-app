@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -175,13 +177,24 @@ class ApiClient {
     }
 
     try {
+      // ⚠️ نفس فخ ترويسة `Accept` الموثّق أعلى هذا الصف بالضبط — هذا
+      // النداء الوحيد بالتطبيق الذي يبني نسخة Dio خام بدل استخدام نسخة
+      // [ApiClient] (لأن التجديد نفسه لازم يعمل بمعزل تام عن أي نسخة قد
+      // تكون طلباتها الأصلية هي سبب الـ 401 أصلاً). بدون هذه الترويهة
+      // الصريحة، بوابة الـ API (الآن خلف Ocelot بعد الانتقال، راجع توثيق
+      // [baseUrl] بالأعلى) قد ترجع `text/plain` فيفشل التحويل لـ
+      // `Map<String, dynamic>` بخطأ نوع غير مُلتقَط كـ DioException —
+      // يُلتقط هنا بالـ `catch (_)` أدناه فعلاً فلا يتسبب بعطل، لكنه كان
+      // يُترجَم خطأً لـ "رمز التجديد غير صالح" (تسجيل خروج كل ~15 دقيقة،
+      // عمر رمز الدخول) رغم أن رمز التجديد نفسه لا يزال صالحاً تماماً.
       final response = await Dio(
-        BaseOptions(baseUrl: authBaseUrl),
-      ).post<Map<String, dynamic>>(
-        '/api/auth/refresh-token',
-        data: {'refreshToken': refreshToken},
-      );
-      final data = response.data?['data'] as Map<String, dynamic>?;
+        BaseOptions(
+          baseUrl: authBaseUrl,
+          headers: {'Accept': 'application/json'},
+        ),
+      ).post<dynamic>('/api/auth/refresh-token', data: {'refreshToken': refreshToken});
+      final body = _asRefreshJsonMap(response.data);
+      final data = body?['data'] as Map<String, dynamic>?;
       if (data == null) {
         _lastRefreshFailureReason = _RefreshFailureReason.unauthorized;
         return false;
@@ -207,6 +220,23 @@ class ApiClient {
       _lastRefreshFailureReason = _RefreshFailureReason.unauthorized;
       return false;
     }
+  }
+
+  /// يطبّع جسم استجابة التجديد إلى `Map<String, dynamic>` بغض النظر عن نوع
+  /// المحتوى الفعلي الذي أرجعه الخادم — نفس منطق `_asJsonMap` المكرَّر عبر
+  /// مصادر البيانات الأخرى (راجع تعليق ترويسة `Accept` أعلى [_performRefresh]).
+  Map<String, dynamic>? _asRefreshJsonMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String && data.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map<String, dynamic>) return decoded;
+      } catch (_) {
+        // جسم غير قابل لفك ترميزه كـ JSON إطلاقاً — يُعامَل كفشل تجديد
+        // عادي أدناه (data == null) بدل رمي استثناء غير متوقَّع.
+      }
+    }
+    return null;
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
