@@ -224,10 +224,9 @@ class _RequestFormViewState extends State<_RequestFormView> {
   // احتياطي فقط: يُستخدم لإدخال رقم الغرفة يدوياً حين يتعذّر جلب غرف
   // المبنى الفعلية (فشل الطلب، أو لم تُسجَّل غرف لهذا الطابق بعد).
   final _previousRoomFallbackController = TextEditingController();
-  // احتياطي فقط: `GET /api/buildings/lookup` (المستخدم فعلياً لهذه
-  // القائمة — راجع توثيق `fetchBuildings` بمصدر البيانات) لا يرجع
-  // `floorsCount` إطلاقاً، فلا طريقة لعرض طوابق كخيارات جاهزة لأي مبنى
-  // — إدخال يدوي دائماً بدل قسم طابق معطَّل بلا أي إجراء ممكن.
+  // احتياطي فقط: `floorsCount` بـ `GET /api/buildings/lookup` (راجع
+  // توثيق `fetchBuildings` بمصدر البيانات) قد يكون `null` لبعض المباني
+  // تحديداً — إدخال يدوي فقط لتلك الحالة، لا كل مبنى.
   final _previousFloorFallbackController = TextEditingController();
 
   int? _governorateId;
@@ -558,7 +557,7 @@ class _RequestFormViewState extends State<_RequestFormView> {
                   spacing: 8,
                   runSpacing: 8,
                   children:
-                      List.generate(5, (i) => i + 1).map((level) {
+                      List.generate(7, (i) => i + 1).map((level) {
                         return CustomChip(
                           label: HousingRequestLabels.academicLevelLabel(level),
                           selected: _academicLevel == level,
@@ -959,6 +958,14 @@ class _DocumentSlot extends StatelessWidget {
   }
 }
 
+/// يعرض المبلغ بلا كسور إن كان عدداً صحيحاً، وإلا بمنزلتين عشريتين
+/// (نفس تنسيق شاشة المحفظة).
+String _formatAmount(double amount) {
+  return amount == amount.truncateToDouble()
+      ? amount.toStringAsFixed(0)
+      : amount.toStringAsFixed(2);
+}
+
 class _StatusView extends StatefulWidget {
   const _StatusView({required this.request});
 
@@ -971,31 +978,97 @@ class _StatusView extends StatefulWidget {
 class _StatusViewState extends State<_StatusView> {
   bool _isPaying = false;
 
-  /// لا يوجد حالياً أي حقل من الخادم يوضّح إن كان الطلب مدفوعاً بالفعل
-  /// (`HousingRequestDto` لا يحمل مثل هذا الحقل بعد) — نتتبّع نجاح الدفع
-  /// محلياً فقط طوال عمر هذه الشاشة (يختفي زر "ادفع" بعدها مباشرة)، لكن
-  /// هذا لا يُبقيه مخفياً بعد إغلاق التطبيق وإعادة فتحه أو حتى بعد الخروج
-  /// والعودة لهذا التبويب من جديد. **يلزم حقل حقيقي من الباك إند
-  /// (مثال: `isPaid` على الطلب أو التخصيص) لعرض حالة الدفع بشكل صحيح
-  /// ودائم.**
-  bool _paidLocally = false;
+  /// حوار تأكيد وسط الشاشة قبل تنفيذ الدفع فعلياً — الدفع عملية مالية لا
+  /// رجعة فيها، فلا نخصم بمجرد لمسة زر واحدة. لا حقل مبلغ هنا: الخادم
+  /// يخصم رسم الدورة الكامل تلقائياً (`POST .../pay` بلا جسم)، فالحوار
+  /// يعرض رصيد المحفظة الحالي فقط ويطلب التأكيد.
+  Future<void> _confirmAndPay(BuildContext context, int requestId) async {
+    if (_isPaying) return;
+    final theme = Theme.of(context);
+    final balance = context.read<UserSessionCubit>().state?.balance ?? 0;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('تأكيد دفع رسوم السكن'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'سيتم خصم رسوم السكن المقرَّرة لهذه الدورة كاملةً من رصيد '
+                  'محفظتك مباشرة، ولا يمكن التراجع عن العملية بعد تأكيدها.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySubtle,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 18,
+                        color: AppColors.primaryDark,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'رصيد محفظتك الحالي',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _formatAmount(balance),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.of(dialogContext).pop(true);
+                },
+                child: const Text('تأكيد الدفع'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _handlePay(context, requestId);
+    }
+  }
 
   Future<void> _handlePay(BuildContext context, int requestId) async {
     if (_isPaying) return;
     setState(() => _isPaying = true);
 
-    final result = await context.read<HousingRequestCubit>().payForRequest(
-      requestId,
-    );
-
-    if (!context.mounted) return;
-    setState(() => _isPaying = false);
+    final cubit = context.read<HousingRequestCubit>();
+    final result = await cubit.payForRequest(requestId);
 
     if (result.isSuccess) {
-      setState(() => _paidLocally = true);
-
       final newBalance = result.dataOrNull;
-      if (newBalance != null) {
+      if (newBalance != null && context.mounted) {
         final sessionCubit = context.read<UserSessionCubit>();
         final user = sessionCubit.state;
         if (user != null) {
@@ -1004,17 +1077,35 @@ class _StatusViewState extends State<_StatusView> {
       }
     }
 
+    // نعتمد `isPaid` الحقيقي من الخادم لا نجاح النداء وحده لإخفاء الزر
+    // (راجع [HousingRequest.isPaid])، فنعيد جلب الطلب دائماً بعد محاولة
+    // الدفع — نجحت أم فشلت. عند 409 تحديداً هذا ضروري وليس مجرد تحديث:
+    // الخطأ غامض المعنى (مدفوع مسبقاً أو رسم الدورة = 0)، ولا سبيل
+    // للتمييز إلا بفحص `isPaid` الفعلي بعد إعادة الجلب هذه (راجع توثيق
+    // `_mapPayException` بمصدر البيانات).
+    final failure = result.failureOrNull;
+    await cubit.fetchMyRequest();
+    if (!context.mounted) return;
+
+    String message;
+    if (result.isSuccess) {
+      message = 'تم دفع رسوم السكن بنجاح.';
+    } else if (failure?.statusCode == 409) {
+      final freshState = cubit.state;
+      final isPaidNow =
+          freshState is HousingRequestSubmitted && freshState.request.isPaid;
+      message =
+          isPaidNow
+              ? 'تم دفع رسوم هذا الطلب مسبقاً.'
+              : 'لم يتم تحديد رسوم السكن لهذه الدورة بعد، يرجى المحاولة لاحقاً أو التواصل مع الإدارة.';
+    } else {
+      message = failure!.message;
+    }
+
+    setState(() => _isPaying = false);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            result.isSuccess
-                ? 'تم دفع رسوم السكن بنجاح.'
-                : result.failureOrNull!.message,
-          ),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -1158,7 +1249,7 @@ class _StatusViewState extends State<_StatusView> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _paidLocally
+                    request.isPaid
                         ? 'تم دفع رسوم السكن بنجاح من رصيد محفظتك.'
                         : 'ادفع رسوم السكن من رصيد محفظتك مباشرة داخل التطبيق.',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -1166,7 +1257,7 @@ class _StatusViewState extends State<_StatusView> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  if (_paidLocally)
+                  if (request.isPaid)
                     Row(
                       children: [
                         Icon(
@@ -1189,7 +1280,7 @@ class _StatusViewState extends State<_StatusView> {
                       label: 'ادفع رسوم السكن الآن',
                       icon: Icons.payments_outlined,
                       isLoading: _isPaying,
-                      onPressed: () => _handlePay(context, request.id),
+                      onPressed: () => _confirmAndPay(context, request.id),
                     ),
                 ],
               ),

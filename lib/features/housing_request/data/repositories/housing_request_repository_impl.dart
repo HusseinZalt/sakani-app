@@ -169,7 +169,16 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
       final balance = await _remoteDataSource.payForRequest(requestId);
       return ApiResult.success(balance);
     } on HousingRequestException catch (e) {
-      return ApiResult.failure(ApiFailure(message: e.message, type: e.type));
+      // statusCode مُمرَّر هنا تحديداً (وليس بباقي طرق هذا الملف) لأن
+      // 409 غامض المعنى بهذه النقطة وحدها — الشاشة تحتاجه للتمييز
+      // (راجع توثيق [HousingRequestRemoteDataSource.payForRequest]).
+      return ApiResult.failure(
+        ApiFailure(
+          message: e.message,
+          type: e.type,
+          statusCode: e.statusCode,
+        ),
+      );
     } catch (_) {
       return ApiResult.failure(ApiFailure.unknown());
     }

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radius.dart';
 import '../../../../core/session/user_session_cubit.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/utils/relative_time.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_card.dart';
@@ -718,34 +719,80 @@ class _PendingJoinRequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isStale = request.elapsed > _pendingJoinStaleAfter;
+    // لا مؤشّر تحميل دوّار هون: الطلب مو "قيد المعالجة" — هو مُرسَل
+    // وواصل، وعالق فقط على قرار بشري خارج التطبيق. المؤشّر الدوّار كان
+    // يخلّي الشاشة تبيّن معلّقة/متجمّدة. بدله: بطاقة حالة ثابتة بشارة
+    // "قيد الانتظار" وأيقونة ساكنة.
+    final accent = isStale ? AppColors.warning : AppColors.primary;
 
     return CustomCard(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (isStale)
-            const Icon(
-              Icons.hourglass_disabled_rounded,
-              size: 32,
-              color: AppColors.warning,
-            )
-          else
-            const SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(strokeWidth: 2.4),
-            ),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isStale
+                      ? Icons.hourglass_disabled_rounded
+                      : Icons.hourglass_top_rounded,
+                  size: 20,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'تم إرسال طلب الانضمام',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'كود "${request.code}" · ${formatRelativeTime(request.sentAt)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: Text(
+                  isStale ? 'طال الانتظار' : 'قيد الانتظار',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
           Text(
-            isStale ? 'طال انتظار الرد' : 'بانتظار رد قائد الغروب',
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: 4),
-          Text(
             isStale
-                ? 'أرسلت طلب انضمام بالكود "${request.code}" من مدة وما وصل رد لحد هلق — يمكن يكون القائد رفضه بصمت (ما في طريقة نتأكد منها). إذا حابب، بإمكانك إلغاء الانتظار والمحاولة من جديد.'
-                : 'أرسلت طلب انضمام بالكود "${request.code}". بمجرد ما يوافق قائد الغروب، رح تنعكس هون تلقائياً.',
-            textAlign: TextAlign.center,
+                ? 'مرّ وقت طويل بلا رد، ويمكن يكون قائد الغروب رفض الطلب بصمت (ما في طريقة نتأكد منها). إذا حابب، ألغِ الطلب وجرّب كود تاني.'
+                : 'ما إلك شي تعمله هلق — بمجرد ما يوافق القائد رح تنضم تلقائياً ويظهر الغروب هون. اسحب الشاشة للأسفل للتحديث بأي وقت.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -758,12 +805,12 @@ class _PendingJoinRequestCard extends StatelessWidget {
                 foregroundColor: AppColors.warning,
                 side: const BorderSide(color: AppColors.warning),
               ),
-              child: const Text('إلغاء الانتظار والمحاولة من جديد'),
+              child: const Text('إلغاء الطلب والمحاولة من جديد'),
             )
           else
-            TextButton(
+            OutlinedButton(
               onPressed: () => _confirmCancel(context),
-              child: const Text('لسا ما وصلك رد؟ ألغِ الانتظار'),
+              child: const Text('إلغاء الطلب'),
             ),
         ],
       ),

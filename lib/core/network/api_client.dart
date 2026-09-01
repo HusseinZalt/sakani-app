@@ -139,6 +139,16 @@ class ApiClient {
   /// خدمة السكن — طلبات السكن، الغروبات، التخصيص.
   static const String housingBaseUrl = gatewayBaseUrl;
 
+  /// خدمة المحفظة (`/api/wallet/...`) — **مؤكَّد من فريق الباك إند
+  /// (2026-09-01):** لسا ما انربطت بالبوابة الموحّدة، وعم تُخدَّم مباشرة
+  /// من نفس مضيف خدمة المصادقة القديم على Vercel (راجع [authBaseUrl]
+  /// أعلاه لتاريخها). أي طلب `/api/wallet/...` عبر [gatewayBaseUrl] يرجع
+  /// `404` فوراً (تأكَّد بالاختبار المباشر) لأن المسار غير مسجَّل أصلاً
+  /// هناك، بينما نفس الطلب على هالمضيف يرجع استجابة حقيقية (401 بدون
+  /// توكن، تماماً متل `/api/auth/login`). ⚠️ مؤقت — يُفترض حذفه والعودة
+  /// لـ [gatewayBaseUrl] فور ما الباك إند يربط خدمة المحفظة بالبوابة.
+  static const String walletBaseUrl = 'https://university-auth-lemon.vercel.app';
+
   /// للتوافق مع الاستخدام الحالي في طبقة المصادقة — نفس [auth].
   static final ApiClient instance = ApiClient._(authBaseUrl);
 
@@ -147,6 +157,7 @@ class ApiClient {
   static final ApiClient notifications = ApiClient._(notificationsBaseUrl);
   static final ApiClient housing = ApiClient._(housingBaseUrl);
   static final ApiClient ads = ApiClient._(adsBaseUrl);
+  static final ApiClient wallet = ApiClient._(walletBaseUrl);
 
   final String baseUrl;
 

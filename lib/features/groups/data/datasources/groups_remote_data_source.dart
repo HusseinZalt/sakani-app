@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/server_message_ar.dart';
 import '../models/group_models.dart';
 
 /// استثناء مخصص لطبقة الـ Data يحمل رسالة عربية واضحة ونوع الخطأ المناسب.
@@ -129,29 +130,43 @@ class GroupsRemoteDataSource {
   /// `housing_request_remote_data_source.dart` لتفاصيل الحالتين.
   String _extract400Message(dynamic rawData) {
     final body = _tryAsJsonMap(rawData);
+    const fallback =
+        'تعذّر تنفيذ العملية، يرجى مراجعة البيانات والمحاولة مرة أخرى.';
+
+    // رسالة عمل صريحة من الخادم (`{ "message": "..." }` أو `detail`) —
+    // أهم مصدر للنصوص الإنجليزية التي كانت تظهر للمستخدم، فنمرّرها عبر
+    // الترجمة العربية قبل أي شيء آخر.
+    final serverText =
+        (body?['message'] ?? body?['detail'] ?? body?['error']) as String?;
+    if (serverText != null && serverText.trim().isNotEmpty) {
+      return translateServerMessageAr(serverText, fallback: fallback);
+    }
 
     if (body != null && body['errors'] is Map) {
       final errors = body['errors'] as Map;
       final messages = <String>[];
       errors.forEach((field, value) {
-        final label = _fieldLabels[field.toString()] ?? field.toString();
-        messages.add(label);
+        final label = _fieldLabels[field.toString()];
+        if (label != null) messages.add(label);
       });
-      if (messages.isNotEmpty) return messages.join('، ');
+      if (messages.isNotEmpty) {
+        return 'تحقق من: ${messages.join('، ')}.';
+      }
+      return 'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
     }
 
     final title = body?['title'] as String?;
     if (title != null &&
         title.isNotEmpty &&
         title != 'One or more validation errors occurred.') {
-      return title;
+      return translateServerMessageAr(title, fallback: fallback);
     }
 
     if (rawData is String && rawData.trim().isNotEmpty) {
-      return rawData.trim();
+      return translateServerMessageAr(rawData, fallback: fallback);
     }
 
-    return 'تعذّر تنفيذ العملية، يرجى مراجعة البيانات والمحاولة مرة أخرى.';
+    return fallback;
   }
 
   GroupsException _mapDioException(DioException e) {

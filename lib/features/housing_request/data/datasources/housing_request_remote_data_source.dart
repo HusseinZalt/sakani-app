@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/server_message_ar.dart';
 import '../../domain/entities/housing_document.dart';
 import '../models/housing_request_model.dart';
 
@@ -12,10 +13,15 @@ class HousingRequestException implements Exception {
   const HousingRequestException(
     this.message, {
     this.type = ApiErrorType.badRequest,
+    this.statusCode,
   });
 
   final String message;
   final ApiErrorType type;
+
+  /// كود الحالة HTTP الخام، عند الحاجة للتمييز بين حالتين تحملان نفس
+  /// [type] (راجع الاستخدام بـ [payForRequest] لـ 409 الغامض).
+  final int? statusCode;
 }
 
 /// مصدر بيانات طلب السكن — يستدعي خدمة السكن الحقيقية (ASP.NET Core على
@@ -80,10 +86,12 @@ class HousingRequestRemoteDataSource {
   /// الإدارة الكاملة) ترجع 403 لأي حساب طالب — مقصورة فعلياً على
   /// admin/super_admin رغم أن توثيق Swagger لا يُظهر أي قيد صلاحيات
   /// عليها. نقطة `GET /api/buildings/lookup` هي المخصَّصة صراحة لهذا
-  /// الاستخدام (ترجع 200 لأي حساب مصادَق)، لكنها ترجع `BuildingLookupDto`
-  /// المبسَّط (`id`, `name` فقط، بلا `floorsCount`) — الواجهة تتعامل مع
-  /// غياب `floorsCount` أصلاً بإدخال يدوي احتياطي (راجع
-  /// `housing_request_screen.dart`).
+  /// الاستخدام (ترجع 200 لأي حساب مصادَق). **تحديث (راجع
+  /// `frontend-previous-residence-picker.md`):** `floorsCount` فعلياً
+  /// جزء من `BuildingLookupDto` (قد يكون `null` لبعض المباني تحديداً،
+  /// وليس غائباً عن الـ DTO بالكامل كما ظُنَّ سابقاً) — الواجهة تعرض
+  /// طوابق `1..floorsCount` جاهزة عندما تتوفر، وتبقي الإدخال اليدوي
+  /// احتياطاً فقط لحالة `null` (راجع `housing_request_screen.dart`).
   Future<List<BuildingModel>> fetchBuildings() async {
     try {
       final response = await _dio.get<dynamic>('/api/buildings/lookup');
@@ -99,10 +107,18 @@ class HousingRequestRemoteDataSource {
 
   /// غرف مبنى واحد — تُستخدم لملء اختيار "رقم الغرفة" بعد فلترتها محلياً
   /// حسب الطابق المختار.
+  ///
+  /// **تحديث (راجع `frontend-previous-residence-picker.md`):**
+  /// `GET /api/buildings/{id}/rooms` (المستخدَمة سابقاً هنا) إدارية
+  /// بالكامل وترجع 403 لحساب طالب، تماماً متل `/api/buildings` قبلها
+  /// (راجع توثيق [fetchBuildings] أعلاه) — `/rooms/lookup` هي النقطة
+  /// المخصَّصة صراحة لهذا الاستخدام الطلابي (`RoomLookupDto`: `id`,
+  /// `floor`, `roomNumber` فقط، بلا حالة الغرفة أو شغلها، حفاظاً على
+  /// خصوصية الساكن الحالي).
   Future<List<DormRoomModel>> fetchRoomsForBuilding(int buildingId) async {
     try {
       final response = await _dio.get<dynamic>(
-        '/api/buildings/$buildingId/rooms',
+        '/api/buildings/$buildingId/rooms/lookup',
       );
       final items = _asJsonList(response.data);
       return items
@@ -234,51 +250,70 @@ class HousingRequestRemoteDataSource {
 
   /// دفع رسوم طلب سكن مقبول من رصيد محفظة الطالب.
   ///
-  /// ⚠️ **بخلاف بقية نقاط هذا الملف، شكل استجابة/أخطاء هذه النقطة تحديداً
-  /// غير مؤكَّد باختبار فعلي** (لا توثيق Swagger متاح وقت الكتابة) — مبنية
-  /// على افتراضات معقولة قياساً على بقية الـ API (وعلى شكل رد الشحن
-  /// المكافئ بالمحفظة `POST /api/wallet/redeem`، راجع
-  /// `wallet_remote_data_source.dart`): نجاح بلا جسم أو بجسم فيه
-  /// `data.balance` اختيارياً (الرصيد الجديد بعد الخصم)، و404/409/402
-  /// للحالات الشائعة (الطلب غير موجود/مدفوع سابقاً/الرصيد غير كافٍ). عند
-  /// أول اختبار فعلي يجب تحديث هذا التوثيق والتعامل مع أي فرق في الشكل.
+  /// **مؤكَّد الآن من فريق الباك إند** (بعد أن كان هذا مبنياً على
+  /// افتراضات قبل أول اختبار فعلي): نجاح 200 بجسم `{ "message": "...",
+  /// "balance": 75.0 }` — `balance` حقل جذري مباشر وليس متداخلاً تحت
+  /// `data`، وقد يكون `null` أحياناً (عندها لا نغيّر الرصيد المحلي بدل
+  /// افتراض قيمة خاطئة؛ لا توجد نقطة مخصَّصة لجلب الرصيد وحده حتى الآن
+  /// لإعادة الجلب فوراً).
   Future<double?> payForRequest(int requestId) async {
     try {
       final response = await _dio.post<dynamic>(
         '/api/housing-requests/$requestId/pay',
       );
       final body = _tryAsJsonMap(response.data);
-      final data = body?['data'] as Map<String, dynamic>?;
-      return (data?['balance'] as num?)?.toDouble();
+      return (body?['balance'] as num?)?.toDouble();
     } on DioException catch (e) {
       throw _mapPayException(e);
     }
   }
 
+  /// **مؤكَّد الآن من فريق الباك إند:**
+  /// - 402 حصرياً لرصيد غير كافٍ؛ 400 لـ"الطلب غير مقبول بعد" برسالة
+  ///   مختلفة تماماً — لا داعي لتخمين السبب من نص الرسالة كما كان سابقاً.
+  /// - 409 له معنيان لا يمكن التمييز بينهما من الاستجابة وحدها: مدفوع
+  ///   مسبقاً، أو رسم السكن لهذه الدورة لم يُحدَّد بعد (0). الشاشة
+  ///   المستدعية تُميّزهما بإعادة جلب الطلب وفحص `isPaid` الفعلي بعد هذا
+  ///   الاستثناء (راجع `_StatusViewState._handlePay`)، فالرسالة هنا عامة
+  ///   عمداً.
+  /// - 403 = الطالب ليس مالك الطلب، 502 = تعذّر خدمة المصادقة (لا علاقة
+  ///   بطلب السكن نفسه)، 404 بلا جسم.
   HousingRequestException _mapPayException(DioException e) {
-    switch (e.response?.statusCode) {
+    final statusCode = e.response?.statusCode;
+    switch (statusCode) {
       case 400:
-        final message = _extract400Message(e.response?.data);
-        final lower = message.toLowerCase();
-        if (lower.contains('balance') ||
-            lower.contains('insufficient') ||
-            message.contains('رصيد')) {
-          return const HousingRequestException(
-            'رصيدك في المحفظة غير كافٍ لدفع رسوم السكن، يرجى شحن رصيدك أولاً.',
-          );
-        }
-        return HousingRequestException(message);
+        return HousingRequestException(
+          _extract400Message(e.response?.data),
+          statusCode: statusCode,
+        );
       case 402:
-        return const HousingRequestException(
+        return HousingRequestException(
           'رصيدك في المحفظة غير كافٍ لدفع رسوم السكن، يرجى شحن رصيدك أولاً.',
+          statusCode: statusCode,
+        );
+      case 403:
+        return HousingRequestException(
+          'لا تملك صلاحية دفع رسوم هذا الطلب.',
+          type: ApiErrorType.forbidden,
+          statusCode: statusCode,
         );
       case 404:
-        return const HousingRequestException(
+        return HousingRequestException(
           'لم يتم العثور على طلب السكن.',
           type: ApiErrorType.notFound,
+          statusCode: statusCode,
         );
       case 409:
-        return const HousingRequestException('تم دفع رسوم هذا الطلب مسبقاً.');
+        return HousingRequestException(
+          'تعذّر إتمام الدفع.',
+          statusCode: statusCode,
+        );
+      case 502:
+        return HousingRequestException(
+          'تعذّر التحقق من حسابك حالياً، يرجى المحاولة لاحقاً.',
+          type: ApiErrorType.server,
+          statusCode: statusCode,
+        );
       default:
         return _mapDioException(e);
     }
@@ -450,12 +485,24 @@ class HousingRequestRemoteDataSource {
   /// برسالة عامة غير مفيدة تخفي السبب الحقيقي عن المستخدم.**
   String _extract400Message(dynamic rawData) {
     final body = _tryAsJsonMap(rawData);
+    const fallback = 'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
+
+    // رسالة عمل صريحة من الخادم (`{ "message": "..." }` / `detail`) —
+    // المصدر الأساسي للنصوص الإنجليزية التي كانت تظهر كما هي، فتُترجَم
+    // للعربية قبل أي معالجة أخرى.
+    final serverText =
+        (body?['message'] ?? body?['detail'] ?? body?['error']) as String?;
+    if (serverText != null && serverText.trim().isNotEmpty) {
+      return translateServerMessageAr(serverText, fallback: fallback);
+    }
 
     if (body != null && body['errors'] is Map) {
       final errors = body['errors'] as Map;
       final messages = <String>[];
       errors.forEach((field, value) {
-        final label = _fieldLabels[field.toString()] ?? field.toString();
+        // نتجاهل الحقول غير المعروفة بدل إظهار اسمها الإنجليزي الخام.
+        final label = _fieldLabels[field.toString()];
+        if (label == null) return;
         final firstMessage =
             value is List && value.isNotEmpty ? value.first.toString() : null;
         if (firstMessage != null &&
@@ -466,21 +513,23 @@ class HousingRequestRemoteDataSource {
         }
       });
       if (messages.isNotEmpty) return messages.join('، ');
+      return fallback;
     }
 
     final title = body?['title'] as String?;
     if (title != null &&
         title.isNotEmpty &&
         title != 'One or more validation errors occurred.') {
-      return title;
+      return translateServerMessageAr(title, fallback: fallback);
     }
 
     if (rawData is String && rawData.trim().isNotEmpty) {
       final trimmed = rawData.trim();
-      return _translateNotFoundMessage(trimmed) ?? trimmed;
+      return _translateNotFoundMessage(trimmed) ??
+          translateServerMessageAr(trimmed, fallback: fallback);
     }
 
-    return 'البيانات المُدخلة غير صحيحة، يرجى مراجعتها.';
+    return fallback;
   }
 
   /// يترجم نص خطأ خام معروف الشكل مثل `"PreviousBuildingId was not

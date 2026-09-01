@@ -14,7 +14,9 @@ import '../cubit/wallet_redeem_state.dart';
 ///
 /// **ملاحظة مهمة:** توليد ملصقات الشحن (تحويلها لصور QR) مسؤولية "لوحة
 /// التحكم الإدارية" فقط — راجع `flutter-wallet-integration.md`. هذه
-/// الشاشة تمسح وترسل نص الكود كما هو فقط، ولا تولّده أبداً.
+/// الشاشة تمسح وترسل نص الكود فقط (بعد `trim()` بسيط لأي فراغ/سطر جديد
+/// لاحق قد يُضيفه مولّد الملصق، راجع [_QrScanViewState._handleDetect])،
+/// ولا تولّده أبداً.
 class QrScanScreen extends StatelessWidget {
   const QrScanScreen({super.key});
 
@@ -45,8 +47,17 @@ class _QrScanViewState extends State<_QrScanView> {
   }
 
   void _handleDetect(BuildContext context, BarcodeCapture capture) {
-    final code = capture.barcodes.firstOrNull?.rawValue;
-    if (code == null || code.isEmpty) return;
+    final raw = capture.barcodes.firstOrNull?.rawValue;
+    if (raw == null || raw.isEmpty) return;
+
+    // بعض مولّدات ملصقات QR تُضيف مسافة/سطر جديد لاحق ضمن النص المُرمَّز
+    // نفسه (لا علاقة له بمحتوى الكود الفعلي) — قارئ الكاميرا يرجعه كما
+    // هو، فيختلف عن الكود المخزَّن بالخادم حرفياً ويُرفض بـ 404 رغم أن
+    // الكود صحيح فعلياً. نُنظّفه هنا قبل الإرسال بدل تعديل الشكل
+    // "الخام" الموثَّق سابقاً (كان يشمل غير المقصود من نظافة).
+    final code = raw.trim();
+    if (code.isEmpty) return;
+    debugPrint('QR scanned raw="$raw" trimmed="$code"');
     context.read<WalletRedeemCubit>().redeem(code);
   }
 

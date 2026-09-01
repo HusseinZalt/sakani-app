@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/server_message_ar.dart';
 import '../../domain/entities/wallet_transactions_page.dart';
 import '../models/wallet_transaction_model.dart';
 
@@ -17,11 +18,12 @@ class WalletException implements Exception {
 }
 
 /// مصدر بيانات المحفظة — يستدعي نقاط `/api/wallet/...` من خدمة المصادقة
-/// نفسها (راجع `flutter-wallet-integration.md`)، وبالتالي تمر عبر نفس
-/// [ApiClient.auth] المستخدم لبقية نقاط `/api/auth/...` (خدمة المصادقة
-/// أصبحت خلف البوابة الموحّدة بنفس المسارات، راجع توثيق [ApiClient]).
+/// نفسها (راجع `flutter-wallet-integration.md`)، لكن خلافاً لبقية نقاط
+/// `/api/auth/...` فهي **لسا مش خلف البوابة الموحّدة** (مؤكَّد من الباك
+/// إند 2026-09-01 — راجع توثيق [ApiClient.walletBaseUrl])، لذلك تمر عبر
+/// [ApiClient.wallet] المخصَّص لا [ApiClient.auth].
 class WalletRemoteDataSource {
-  WalletRemoteDataSource({Dio? dio}) : _dio = dio ?? ApiClient.auth.dio;
+  WalletRemoteDataSource({Dio? dio}) : _dio = dio ?? ApiClient.wallet.dio;
 
   final Dio _dio;
 
@@ -117,6 +119,18 @@ class WalletRemoteDataSource {
     }
 
     switch (statusCode) {
+      case 400:
+        final body = e.response?.data;
+        final map = body is Map ? body : null;
+        final serverText =
+            (map?['message'] ?? map?['detail'] ?? map?['error']) as String? ??
+            (body is String ? body : null);
+        return WalletException(
+          translateServerMessageAr(
+            serverText,
+            fallback: 'تعذّر تنفيذ عملية الشحن، تحقق من الكود وحاول مجدداً.',
+          ),
+        );
       case 401:
         return const WalletException(
           'تعذّر التحقق من صلاحية الدخول، يرجى تسجيل الدخول مرة أخرى.',

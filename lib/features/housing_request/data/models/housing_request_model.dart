@@ -153,6 +153,7 @@ class HousingRequestModel extends HousingRequest {
     super.specialNotes,
     super.documents,
     super.decision,
+    super.isPaid,
   });
 
   /// يحوّل عنصر `HousingRequestDto` من خدمة السكن الحقيقية (ASP.NET Core،
@@ -183,6 +184,10 @@ class HousingRequestModel extends HousingRequest {
               ? AdmissionDecisionModel.fromJson(decisionJson)
               : null,
       submittedAt: parseUtcDateTime(json['submittedAt'] as String),
+      // مؤكَّد الآن من فريق الباك إند: `isPaid` منشور فعلياً على
+      // `HousingRequestDto` (إضافة أخرى، `paymentDueDate`/`paidAt`،
+      // منشورة أيضاً لكن غير مستخدَمة بالتطبيق حتى الآن).
+      isPaid: json['isPaid'] as bool? ?? false,
     );
   }
 }

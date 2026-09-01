@@ -60,4 +60,37 @@ void main() {
       expect(model.vacatedAt, isNull);
     });
   });
+
+  group('HousingRequestModel.isPaid', () {
+    Map<String, dynamic> baseJson({bool? isPaid}) => {
+      'id': 1,
+      'gender': 0,
+      'governorateId': 1,
+      'academicLevel': 2,
+      'detailedAddress': 'عنوان',
+      'hasSpecialNeeds': false,
+      'isPreviousResident': false,
+      'status': 2,
+      'submittedAt': '2026-01-01T00:00:00Z',
+      if (isPaid != null) 'isPaid': isPaid,
+    };
+
+    test('parses isPaid true from the server field', () {
+      final model = HousingRequestModel.fromJson(baseJson(isPaid: true));
+
+      expect(model.isPaid, isTrue);
+    });
+
+    test('parses isPaid false from the server field', () {
+      final model = HousingRequestModel.fromJson(baseJson(isPaid: false));
+
+      expect(model.isPaid, isFalse);
+    });
+
+    test('defaults isPaid to false when the field is absent', () {
+      final model = HousingRequestModel.fromJson(baseJson());
+
+      expect(model.isPaid, isFalse);
+    });
+  });
 }

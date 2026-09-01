@@ -80,6 +80,7 @@ class HousingRequest extends Equatable {
     this.specialNotes,
     this.documents = const [],
     this.decision,
+    this.isPaid = false,
   });
 
   final int id;
@@ -102,6 +103,10 @@ class HousingRequest extends Equatable {
   final AdmissionDecision? decision;
   final DateTime submittedAt;
 
+  /// دُفعت رسوم هذا الطلب فعلياً أم لا — حقل حقيقي دائم من `HousingRequestDto`
+  /// (وليس تتبّعاً محلياً)، يحدّد وحده ظهور زر الدفع بشاشة الحالة.
+  final bool isPaid;
+
   @override
   List<Object?> get props => [
     id,
@@ -119,5 +124,6 @@ class HousingRequest extends Equatable {
     documents,
     decision,
     submittedAt,
+    isPaid,
   ];
 }

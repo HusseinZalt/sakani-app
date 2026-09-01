@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/server_message_ar.dart';
 import '../models/complaint_model.dart';
 
 /// استثناء مخصص لطبقة الـ Data يحمل رسالة عربية واضحة ونوع الخطأ المناسب.
@@ -176,6 +177,18 @@ class ComplaintsRemoteDataSource {
   /// يحاول استخراج رسالة مفهومة من شكل أخطاء تحقّق ASP.NET Core القياسي
   /// (`ValidationProblemDetails`: `{errors: {field: [رسائل]}, title}`).
   String _extractValidationMessage(Map? responseData) {
+    const fallback = 'البيانات المدخلة غير صحيحة، يرجى مراجعتها.';
+
+    // رسالة عمل صريحة من الخادم — تُترجَم للعربية بدل عرضها كما هي.
+    final serverText =
+        (responseData?['message'] ??
+                responseData?['detail'] ??
+                responseData?['error'])
+            as String?;
+    if (serverText != null && serverText.trim().isNotEmpty) {
+      return translateServerMessageAr(serverText, fallback: fallback);
+    }
+
     final errors = responseData?['errors'];
     if (errors is Map && errors.isNotEmpty) {
       final messages =
@@ -183,11 +196,15 @@ class ComplaintsRemoteDataSource {
               .whereType<List>()
               .expand((list) => list)
               .whereType<String>()
+              .map((m) => translateServerMessageAr(m, fallback: fallback))
+              .toSet()
               .toList();
       if (messages.isNotEmpty) return messages.join('\n');
     }
     final title = responseData?['title'];
-    if (title is String && title.isNotEmpty) return title;
-    return 'البيانات المدخلة غير صحيحة.';
+    if (title is String && title.isNotEmpty) {
+      return translateServerMessageAr(title, fallback: fallback);
+    }
+    return fallback;
   }
 }

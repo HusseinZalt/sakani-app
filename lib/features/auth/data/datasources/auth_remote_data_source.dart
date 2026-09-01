@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/server_message_ar.dart';
 import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/session/session_storage.dart';
 import '../../domain/entities/register_data.dart';
@@ -220,7 +221,12 @@ class AuthRemoteDataSource {
       }
       return 'البيانات المدخلة غير صحيحة.';
     }
-    return raw;
+    // أي رسالة إنجليزية غير مُغطّاة بالحالات أعلاه: تُترجَم عبر القاموس
+    // المشترك، أو تُستبدَل برسالة عربية عامة — لا تظهر إنجليزية للمستخدم.
+    return translateServerMessageAr(
+      raw,
+      fallback: 'تعذّر تنفيذ العملية، يرجى المحاولة مرة أخرى.',
+    );
   }
 
   AuthException _mapDioException(DioException e) {
