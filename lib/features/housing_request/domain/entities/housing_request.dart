@@ -81,6 +81,7 @@ class HousingRequest extends Equatable {
     this.documents = const [],
     this.decision,
     this.isPaid = false,
+    this.feeAmount,
   });
 
   final int id;
@@ -107,6 +108,12 @@ class HousingRequest extends Equatable {
   /// (وليس تتبّعاً محلياً)، يحدّد وحده ظهور زر الدفع بشاشة الحالة.
   final bool isPaid;
 
+  /// الرسم المتوجّب على الطلب (`feeAmount` من `HousingRequestDto`) —
+  /// يُعرض بحوار تأكيد الدفع ويُرسَل كـ `amount` بنداء `/pay`. يكون
+  /// `null` قبل أن تُحدَّد رسوم السكن لهذه الدورة، وعندها لا يُعرض زر
+  /// الدفع أصلاً.
+  final double? feeAmount;
+
   @override
   List<Object?> get props => [
     id,
@@ -125,5 +132,6 @@ class HousingRequest extends Equatable {
     decision,
     submittedAt,
     isPaid,
+    feeAmount,
   ];
 }

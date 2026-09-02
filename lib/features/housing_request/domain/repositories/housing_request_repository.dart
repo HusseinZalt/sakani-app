@@ -60,9 +60,10 @@ abstract class HousingRequestRepository {
   Future<ApiResult<void>> deleteRequest(int requestId);
 
   /// دفع رسوم طلب سكن مقبول من رصيد محفظة الطالب (`POST
-  /// /api/housing-requests/{id}/pay`) — راجع تحفظات التوثيق بـ
-  /// [HousingRequestRemoteDataSource.payForRequest]. تُرجع الرصيد الجديد
-  /// إن أرجعه الخادم ضمن الاستجابة، أو null إن لم يُرجعه (لا يعني فشل
+  /// /api/housing-requests/{id}/pay`) — [amount] هو الرسم المتوجّب
+  /// (`HousingRequest.feeAmount`) يُرسَل كما هو للتأكيد. راجع تحفظات
+  /// التوثيق بـ [HousingRequestRemoteDataSource.payForRequest]. تُرجع
+  /// الرصيد الجديد إن أرجعه الخادم، أو null إن لم يُرجعه (لا يعني فشل
   /// العملية، فقط عدم توفر رصيد محدَّث لعرضه فوراً).
-  Future<ApiResult<double?>> payForRequest(int requestId);
+  Future<ApiResult<double?>> payForRequest(int requestId, {required double amount});
 }

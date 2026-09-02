@@ -93,4 +93,37 @@ void main() {
       expect(model.isPaid, isFalse);
     });
   });
+
+  group('HousingRequestModel.feeAmount', () {
+    Map<String, dynamic> baseJson({num? feeAmount}) => {
+      'id': 1,
+      'gender': 0,
+      'governorateId': 1,
+      'academicLevel': 2,
+      'detailedAddress': 'عنوان',
+      'hasSpecialNeeds': false,
+      'isPreviousResident': false,
+      'status': 2,
+      'submittedAt': '2026-01-01T00:00:00Z',
+      if (feeAmount != null) 'feeAmount': feeAmount,
+    };
+
+    test('parses an integer feeAmount as double', () {
+      final model = HousingRequestModel.fromJson(baseJson(feeAmount: 25));
+
+      expect(model.feeAmount, 25.0);
+    });
+
+    test('parses a decimal feeAmount', () {
+      final model = HousingRequestModel.fromJson(baseJson(feeAmount: 25.5));
+
+      expect(model.feeAmount, 25.5);
+    });
+
+    test('leaves feeAmount null when the field is absent', () {
+      final model = HousingRequestModel.fromJson(baseJson());
+
+      expect(model.feeAmount, isNull);
+    });
+  });
 }

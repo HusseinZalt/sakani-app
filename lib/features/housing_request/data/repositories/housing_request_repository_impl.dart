@@ -164,9 +164,15 @@ class HousingRequestRepositoryImpl implements HousingRequestRepository {
   }
 
   @override
-  Future<ApiResult<double?>> payForRequest(int requestId) async {
+  Future<ApiResult<double?>> payForRequest(
+    int requestId, {
+    required double amount,
+  }) async {
     try {
-      final balance = await _remoteDataSource.payForRequest(requestId);
+      final balance = await _remoteDataSource.payForRequest(
+        requestId,
+        amount: amount,
+      );
       return ApiResult.success(balance);
     } on HousingRequestException catch (e) {
       // statusCode مُمرَّر هنا تحديداً (وليس بباقي طرق هذا الملف) لأن

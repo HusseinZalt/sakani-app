@@ -172,8 +172,8 @@ class HousingRequestCubit extends Cubit<HousingRequestState> {
   /// الشاشة تستدعيها مباشرة وتدير مؤشر التحميل محلياً (بنفس نمط
   /// [fetchRoomsForBuilding]/إلغاء طلب الصيانة)، ثم تعيد جلب الطلب بعد
   /// النجاح عبر [fetchMyRequest] حتى تنعكس أي حقول محدَّثة من الخادم.
-  Future<ApiResult<double?>> payForRequest(int requestId) {
-    return _repository.payForRequest(requestId);
+  Future<ApiResult<double?>> payForRequest(int requestId, double amount) {
+    return _repository.payForRequest(requestId, amount: amount);
   }
 
   Future<void> submitRequest({

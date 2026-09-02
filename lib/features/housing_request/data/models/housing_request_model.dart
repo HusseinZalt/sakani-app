@@ -154,6 +154,7 @@ class HousingRequestModel extends HousingRequest {
     super.documents,
     super.decision,
     super.isPaid,
+    super.feeAmount,
   });
 
   /// يحوّل عنصر `HousingRequestDto` من خدمة السكن الحقيقية (ASP.NET Core،
@@ -188,6 +189,9 @@ class HousingRequestModel extends HousingRequest {
       // `HousingRequestDto` (إضافة أخرى، `paymentDueDate`/`paidAt`،
       // منشورة أيضاً لكن غير مستخدَمة بالتطبيق حتى الآن).
       isPaid: json['isPaid'] as bool? ?? false,
+      // `feeAmount` — الرسم المتوجّب (§5 من عقد الفرونت المحدَّث). `null`
+      // قبل أن تُحدَّد رسوم الدورة.
+      feeAmount: (json['feeAmount'] as num?)?.toDouble(),
     );
   }
 }

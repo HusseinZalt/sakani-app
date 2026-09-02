@@ -979,13 +979,20 @@ class _StatusViewState extends State<_StatusView> {
   bool _isPaying = false;
 
   /// حوار تأكيد وسط الشاشة قبل تنفيذ الدفع فعلياً — الدفع عملية مالية لا
-  /// رجعة فيها، فلا نخصم بمجرد لمسة زر واحدة. لا حقل مبلغ هنا: الخادم
-  /// يخصم رسم الدورة الكامل تلقائياً (`POST .../pay` بلا جسم)، فالحوار
-  /// يعرض رصيد المحفظة الحالي فقط ويطلب التأكيد.
-  Future<void> _confirmAndPay(BuildContext context, int requestId) async {
+  /// رجعة فيها، فلا نخصم بمجرد لمسة زر واحدة. [feeAmount] هو الرسم
+  /// المتوجّب على الطلب (`HousingRequest.feeAmount`، قيمة مجمَّدة من
+  /// الخادم لا يختارها الطالب)، يُعرض مع الرصيد الحالي والرصيد بعد الدفع،
+  /// ويُرسَل كما هو كـ `amount` لنداء `/pay`.
+  Future<void> _confirmAndPay(
+    BuildContext context,
+    int requestId,
+    double feeAmount,
+  ) async {
     if (_isPaying) return;
     final theme = Theme.of(context);
     final balance = context.read<UserSessionCubit>().state?.balance ?? 0;
+    final remaining = balance - feeAmount;
+    final insufficient = remaining < 0;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -997,45 +1004,56 @@ class _StatusViewState extends State<_StatusView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'سيتم خصم رسوم السكن المقرَّرة لهذه الدورة كاملةً من رصيد '
-                  'محفظتك مباشرة، ولا يمكن التراجع عن العملية بعد تأكيدها.',
+                  'راجع التفاصيل قبل التأكيد — الخصم من رصيد محفظتك مباشر '
+                  'ولا يمكن التراجع عنه بعد التأكيد.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 10,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.primarySubtle,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        size: 18,
-                        color: AppColors.primaryDark,
+                      _PayDetailRow(
+                        label: 'رسوم السكن المطلوبة',
+                        value: _formatAmount(feeAmount),
+                        emphasize: true,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'رصيد محفظتك الحالي',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      const SizedBox(height: 8),
+                      _PayDetailRow(
+                        label: 'رصيد محفظتك الحالي',
+                        value: _formatAmount(balance),
                       ),
-                      const Spacer(),
-                      Text(
-                        _formatAmount(balance),
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryDark,
+                      const SizedBox(height: 8),
+                      _PayDetailRow(
+                        label:
+                            insufficient
+                                ? 'المبلغ الناقص'
+                                : 'رصيدك بعد الدفع',
+                        value: _formatAmount(
+                          insufficient ? -remaining : remaining,
                         ),
+                        danger: insufficient,
                       ),
                     ],
                   ),
                 ),
+                if (insufficient) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'رصيدك لا يكفي لدفع الرسوم، يرجى شحن محفظتك أولاً ثم '
+                    'إعادة المحاولة.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
               ],
             ),
             actions: [
@@ -1044,10 +1062,13 @@ class _StatusViewState extends State<_StatusView> {
                 child: const Text('إلغاء'),
               ),
               TextButton(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  Navigator.of(dialogContext).pop(true);
-                },
+                onPressed:
+                    insufficient
+                        ? null
+                        : () {
+                          HapticFeedback.mediumImpact();
+                          Navigator.of(dialogContext).pop(true);
+                        },
                 child: const Text('تأكيد الدفع'),
               ),
             ],
@@ -1055,16 +1076,20 @@ class _StatusViewState extends State<_StatusView> {
     );
 
     if (confirmed == true && context.mounted) {
-      await _handlePay(context, requestId);
+      await _handlePay(context, requestId, feeAmount);
     }
   }
 
-  Future<void> _handlePay(BuildContext context, int requestId) async {
+  Future<void> _handlePay(
+    BuildContext context,
+    int requestId,
+    double amount,
+  ) async {
     if (_isPaying) return;
     setState(() => _isPaying = true);
 
     final cubit = context.read<HousingRequestCubit>();
-    final result = await cubit.payForRequest(requestId);
+    final result = await cubit.payForRequest(requestId, amount);
 
     if (result.isSuccess) {
       final newBalance = result.dataOrNull;
@@ -1251,7 +1276,9 @@ class _StatusViewState extends State<_StatusView> {
                   Text(
                     request.isPaid
                         ? 'تم دفع رسوم السكن بنجاح من رصيد محفظتك.'
-                        : 'ادفع رسوم السكن من رصيد محفظتك مباشرة داخل التطبيق.',
+                        : (request.feeAmount != null && request.feeAmount! > 0)
+                        ? 'رسوم السكن لهذه الدورة ${_formatAmount(request.feeAmount!)}، تُدفع من رصيد محفظتك مباشرة داخل التطبيق.'
+                        : 'ستتمكّن من دفع رسوم السكن من محفظتك بمجرد تحديد رسوم هذه الدورة.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -1275,12 +1302,47 @@ class _StatusViewState extends State<_StatusView> {
                         ),
                       ],
                     )
-                  else
+                  else if (request.feeAmount != null && request.feeAmount! > 0)
                     CustomButton(
-                      label: 'ادفع رسوم السكن الآن',
+                      label:
+                          'ادفع رسوم السكن (${_formatAmount(request.feeAmount!)})',
                       icon: Icons.payments_outlined,
                       isLoading: _isPaying,
-                      onPressed: () => _confirmAndPay(context, request.id),
+                      onPressed:
+                          () => _confirmAndPay(
+                            context,
+                            request.id,
+                            request.feeAmount!,
+                          ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 18,
+                            color: AppColors.textHint,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'لم تُحدَّد رسوم السكن لهذه الدورة بعد.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                 ],
               ),
@@ -1392,6 +1454,51 @@ class _DetailRow extends StatelessWidget {
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// صف "تسمية ← قيمة" داخل حوار تأكيد الدفع. [emphasize] للرسم المطلوب،
+/// [danger] للمبلغ الناقص عند عدم كفاية الرصيد.
+class _PayDetailRow extends StatelessWidget {
+  const _PayDetailRow({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+    this.danger = false,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasize;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final valueColor =
+        danger
+            ? AppColors.error
+            : (emphasize ? AppColors.primaryDark : null);
+
+    return Row(
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight:
+                emphasize || danger ? FontWeight.w800 : FontWeight.w700,
+            color: valueColor,
           ),
         ),
       ],

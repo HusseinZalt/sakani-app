@@ -173,8 +173,10 @@ class _FakeHousingRequestRepository implements HousingRequestRepository {
       throw UnimplementedError();
 
   @override
-  Future<ApiResult<double?>> payForRequest(int requestId) =>
-      throw UnimplementedError();
+  Future<ApiResult<double?>> payForRequest(
+    int requestId, {
+    required double amount,
+  }) => throw UnimplementedError();
 }
 
 class _FakeMaintenanceRepository implements MaintenanceRepository {

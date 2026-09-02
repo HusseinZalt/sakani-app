@@ -250,16 +250,17 @@ class HousingRequestRemoteDataSource {
 
   /// دفع رسوم طلب سكن مقبول من رصيد محفظة الطالب.
   ///
-  /// **مؤكَّد الآن من فريق الباك إند** (بعد أن كان هذا مبنياً على
-  /// افتراضات قبل أول اختبار فعلي): نجاح 200 بجسم `{ "message": "...",
-  /// "balance": 75.0 }` — `balance` حقل جذري مباشر وليس متداخلاً تحت
-  /// `data`، وقد يكون `null` أحياناً (عندها لا نغيّر الرصيد المحلي بدل
-  /// افتراض قيمة خاطئة؛ لا توجد نقطة مخصَّصة لجلب الرصيد وحده حتى الآن
-  /// لإعادة الجلب فوراً).
-  Future<double?> payForRequest(int requestId) async {
+  /// **عقد الفرونت §5 (محدَّث):** الجسم صار يحمل `amount` = الرسم
+  /// المتوجّب على الطلب (`feeAmount` من `HousingRequestDto`) — قيمة
+  /// مجمَّدة لا يختارها الطالب، نرسلها كما هي للتأكيد. نجاح 200 بجسم
+  /// `{ "message": "...", "amount": 25.0, "balance": 75.0 }` —
+  /// `balance` و`amount` حقول جذرية مباشرة، وقد يكون `balance` `null`
+  /// أحياناً (عندها لا نغيّر الرصيد المحلي).
+  Future<double?> payForRequest(int requestId, {required double amount}) async {
     try {
       final response = await _dio.post<dynamic>(
         '/api/housing-requests/$requestId/pay',
+        data: {'amount': amount},
       );
       final body = _tryAsJsonMap(response.data);
       return (body?['balance'] as num?)?.toDouble();
@@ -278,6 +279,12 @@ class HousingRequestRemoteDataSource {
   ///   عمداً.
   /// - 403 = الطالب ليس مالك الطلب، 502 = تعذّر خدمة المصادقة (لا علاقة
   ///   بطلب السكن نفسه)، 404 بلا جسم.
+  /// يعرض المبلغ بلا كسور إن كان عدداً صحيحاً، وإلا بمنزلتين عشريتين.
+  static String _money(double amount) =>
+      amount == amount.truncateToDouble()
+          ? amount.toStringAsFixed(0)
+          : amount.toStringAsFixed(2);
+
   HousingRequestException _mapPayException(DioException e) {
     final statusCode = e.response?.statusCode;
     switch (statusCode) {
@@ -287,8 +294,14 @@ class HousingRequestRemoteDataSource {
           statusCode: statusCode,
         );
       case 402:
+        final body = _tryAsJsonMap(e.response?.data);
+        final needed = (body?['amount'] as num?)?.toDouble();
+        final have = (body?['balance'] as num?)?.toDouble();
         return HousingRequestException(
-          'رصيدك في المحفظة غير كافٍ لدفع رسوم السكن، يرجى شحن رصيدك أولاً.',
+          needed != null && have != null
+              ? 'رصيدك في المحفظة غير كافٍ: رسوم السكن ${_money(needed)} '
+                  'ورصيدك ${_money(have)}. يرجى شحن رصيدك أولاً.'
+              : 'رصيدك في المحفظة غير كافٍ لدفع رسوم السكن، يرجى شحن رصيدك أولاً.',
           statusCode: statusCode,
         );
       case 403:
